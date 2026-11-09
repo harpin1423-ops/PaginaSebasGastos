@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sebas Control Pro — Finanzas, Pedidos, Envíos y Rentabilidad Shopify</title>
+  <meta name="description" content="Plataforma profesional de control financiero y logístico para tiendas Shopify: control de pedidos contraentrega (COD) y pago anticipado, gastos publicitarios (Meta/TikTok Ads), estado de envíos, devoluciones e inventario en COP." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./index.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- ==================== SIDEBAR NAVIGATION ==================== -->
+    <aside class="sidebar" id="app-sidebar">
+      <div class="brand-header">
+        <div class="brand-logo" aria-hidden="true">S</div>
+        <div>
+          <div class="brand-title">Sebas Control Pro</div>
+          <div class="brand-subtitle">
+            <span class="status-dot"></span>
+            <span>Shopify Operations · COP</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-section-label">Operación &amp; Finanzas</div>
+      <ul class="nav-list">
+        <li>
+          <button type="button" class="nav-item active" id="nav-btn-dashboard" data-view="dashboard">
+            <span class="nav-item-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="9" rx="1.5" />
+                <rect x="14" y="3" width="7" height="5" rx="1.5" />
+                <rect x="14" y="12" width="7" height="9" rx="1.5" />
+                <rect x="3" y="16" width="7" height="5" rx="1.5" />
+              </svg>
+              <span>Resumen &amp; P&amp;L Real</span>
+            </span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="nav-item" id="nav-btn-orders" data-view="orders">
+            <span class="nav-item-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" stroke-linecap="round" stroke-linejoin="round" style="display:none"/>
+                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+                <path d="m3.3 7 8.7 5 8.7-5M12 22V12" />
+              </svg>
+              <span>Pedidos &amp; Envíos</span>
+            </span>
+            <span class="nav-badge" id="badge-orders-count">0</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="nav-item" id="nav-btn-returns" data-view="returns">
+            <span class="nav-item-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+              <span>Devoluciones &amp; RTS</span>
+            </span>
+            <span class="nav-badge badge-danger" id="badge-returns-count">0</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="nav-item" id="nav-btn-expenses" data-view="expenses">
+            <span class="nav-item-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect width="20" height="14" x="2" y="5" rx="2" />
+                <line x1="2" x2="22" y1="10" y2="10" />
+              </svg>
+              <span>Gastos &amp; Publicidad</span>
+            </span>
+            <span class="nav-badge" id="badge-expenses-count">0</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="nav-item" id="nav-btn-products" data-view="products">
+            <span class="nav-item-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m7.5 4.27 9 5.15" />
+                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <span>Productos &amp; Calculadora</span>
+            </span>
+            <span class="nav-badge badge-alert" id="badge-low-stock">0</span>
+          </button>
+        </li>
+      </ul>
+
+      <div class="nav-section-label">Sincronización &amp; Datos</div>
+      <ul class="nav-list">
+        <li>
+          <button type="button" class="nav-item" id="btn-open-csv-modal">
+            <span class="nav-item-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" x2="12" y1="3" y2="15" />
+              </svg>
+              <span>Importar / Exportar CSV</span>
+            </span>
+          </button>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div class="store-health-box">
+          <div class="store-health-title">
+            <span>Efectividad de Entrega</span>
+            <span class="mono" id="sidebar-delivery-pct">0%</span>
+          </div>
+          <div class="store-health-value" id="sidebar-net-profit">$ 0</div>
+          <div style="font-size: 0.7rem; color: var(--text-on-dark-muted);">Utilidad neta libre del periodo</div>
+          <div class="health-bar-track">
+            <div class="health-bar-fill" id="sidebar-delivery-bar" style="width: 80%;"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ==================== MAIN WORKSPACE ==================== -->
+    <div class="main-workspace">
+      <!-- Top Header Bar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button type="button" class="mobile-menu-btn" id="btn-mobile-menu" aria-label="Abrir menú">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+          <div class="page-heading">
+            <h1 id="current-view-title">Resumen Ejecutivo &amp; Estado de Resultados</h1>
+            <p id="current-view-subtitle">Control total de ventas Shopify, recaudo contraentrega (COD), pagos anticipados, fletes y gastos Ads</p>
+          </div>
+        </div>
+
+        <div class="topbar-controls">
+          <!-- Global Payment Model Filter -->
+          <div class="filter-pill-group" role="group" aria-label="Filtrar por modalidad de pago">
+            <button type="button" class="filter-pill active" id="global-filter-all" data-paymodel="ALL">Todos</button>
+            <button type="button" class="filter-pill" id="global-filter-cod" data-paymodel="Contraentrega (COD)">Contraentrega (COD)</button>
+            <button type="button" class="filter-pill" id="global-filter-prepaid" data-paymodel="Pago Anticipado">Pago Anticipado</button>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <button type="button" class="btn btn-secondary" id="btn-quick-expense">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <span>Registrar Gasto</span>
+          </button>
+
+          <button type="button" class="btn btn-primary" id="btn-quick-order">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <span>Nuevo Pedido</span>
+          </button>
+
+          <button type="button" class="btn-icon" id="btn-theme-toggle" title="Cambiar tema claro / oscuro" aria-label="Cambiar tema">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Content Views -->
+      <main class="content-area">
+        <!-- ==================== VIEW 1: DASHBOARD & P&L ==================== -->
+        <section class="view-panel active" id="view-dashboard">
+          <!-- Operational Alerts Strip -->
+          <div class="alert-strip" id="dashboard-alerts-container"></div>
+
+          <!-- Executive KPI Grid -->
+          <div class="kpi-grid">
+            <article class="kpi-card">
+              <div class="kpi-header">
+                <span class="kpi-label">Ventas Facturadas (Brutas)</span>
+                <span class="kpi-tag tag-blue" id="kpi-orders-total-tag">0 pedidos</span>
+              </div>
+              <div class="kpi-value" id="kpi-gross-sales">$ 0</div>
+              <div class="kpi-subtext">
+                <span>Efectivo cobrado/entregado:</span>
+                <strong class="mono" id="kpi-realized-sales">$ 0</strong>
+              </div>
+            </article>
+
+            <article class="kpi-card kpi-highlight">
+              <div class="kpi-header">
+                <span class="kpi-label">Utilidad Neta Real (Libre)</span>
+                <span class="kpi-tag tag-emerald" id="kpi-net-margin-tag">0% margen</span>
+              </div>
+              <div class="kpi-value" id="kpi-net-profit">$ 0</div>
+              <div class="kpi-subtext">
+                <span>Descontando COGS, fletes, RTS y Ads</span>
+                <strong class="mono" id="kpi-profit-per-order">$ 0 / ped.</strong>
+              </div>
+            </article>
+
+            <article class="kpi-card">
+              <div class="kpi-header">
+                <span class="kpi-label">En Tránsito / Por Recaudar</span>
+                <span class="kpi-tag tag-amber" id="kpi-transit-count-tag">0 activos</span>
+              </div>
+              <div class="kpi-value" id="kpi-in-transit-revenue">$ 0</div>
+              <div class="kpi-subtext">
+                <span>Utilidad estimada al entregar:</span>
+                <strong class="mono" id="kpi-in-transit-profit">$ 0</strong>
+              </div>
+            </article>
+
+            <article class="kpi-card">
+              <div class="kpi-header">
+                <span class="kpi-label">Inversión Publicidad (Ads)</span>
+                <span class="kpi-tag tag-blue" id="kpi-roas-tag">ROAS 0.0x</span>
+              </div>
+              <div class="kpi-value" id="kpi-ads-spend">$ 0</div>
+              <div class="kpi-subtext">
+                <span>CPA (Costo por pedido):</span>
+                <strong class="mono" id="kpi-cpa-value">$ 0</strong>
+              </div>
+            </article>
+
+            <article class="kpi-card">
+              <div class="kpi-header">
+                <span class="kpi-label">Efectividad &amp; Devoluciones</span>
+                <span class="kpi-tag tag-crimson" id="kpi-return-rate-tag">0% RTS</span>
+              </div>
+              <div class="kpi-value" id="kpi-delivery-rate">0%</div>
+              <div class="kpi-subtext">
+                <span>Pérdida en fletes devueltos:</span>
+                <strong class="mono" style="color: var(--color-danger);" id="kpi-lost-shipping">$ 0</strong>
+              </div>
+            </article>
+          </div>
+
+          <!-- Charts & P&L Waterfall -->
+          <div class="grid-2-col">
+            <div class="panel-card">
+              <div class="panel-header">
+                <div>
+                  <h2 class="panel-title">Flujo Financiero por Fecha (Ingresos vs Costos vs Utilidad)</h2>
+                  <p class="panel-subtitle">Comparativa de ventas entregadas, costos totales (mercancía + fletes + pauta) y ganancia neta</p>
+                </div>
+                <span class="status-badge status-entregado">Moneda: COP ($)</span>
+              </div>
+              <div class="panel-body">
+                <div class="chart-canvas-wrap">
+                  <canvas id="financeChartCanvas"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel-card">
+              <div class="panel-header">
+                <div>
+                  <h2 class="panel-title">Estado de Resultados (P&amp;L Cascada)</h2>
+                  <p class="panel-subtitle">Radiografía real de adónde va cada peso vendido</p>
+                </div>
+              </div>
+              <div class="panel-body">
+                <div class="pnl-list" id="pnl-waterfall-container"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Carrier Performance & Top Products -->
+          <div class="grid-equal-2">
+            <div class="panel-card">
+              <div class="panel-header">
+                <div>
+                  <h2 class="panel-title">Rendimiento por Transportadora</h2>
+                  <p class="panel-subtitle">Efectividad de entrega, pedidos en novedad y tasa de devolución (RTS)</p>
+                </div>
+                <button type="button" class="btn btn-secondary" data-goto-view="orders">Ver Guías</button>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Transportadora</th>
+                      <th>Pedidos</th>
+                      <th>Entregados</th>
+                      <th>Novedad / Tránsito</th>
+                      <th>Devueltos</th>
+                      <th>Efectividad</th>
+                    </tr>
+                  </thead>
+                  <tbody id="carrier-summary-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="panel-card">
+              <div class="panel-header">
+                <div>
+                  <h2 class="panel-title">Rentabilidad por Producto Shopify</h2>
+                  <p class="panel-subtitle">Desempeño por referencia descontando costo de proveedor y fletes</p>
+                </div>
+                <button type="button" class="btn btn-secondary" data-goto-view="products">Ver Inventario</button>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Producto</th>
+                      <th>Unid. Vendidas</th>
+                      <th>Stock</th>
+                      <th>Facturado</th>
+                      <th>Utilidad Neta Prod.</th>
+                    </tr>
+                  </thead>
+                  <tbody id="top-products-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 2: ORDERS & SHIPPING ==================== -->
+        <section class="view-panel" id="view-orders">
+          <div class="kpi-grid" id="orders-mini-kpis"></div>
+
+          <div class="panel-card">
+            <div class="table-toolbar">
+              <div class="toolbar-search-group">
+                <div class="search-input-wrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
+                  </svg>
+                  <input type="search" class="input-control" id="orders-search-input" placeholder="Buscar por #SH, cliente, ciudad, guía o producto..." />
+                </div>
+
+                <select class="select-control" id="orders-status-filter" aria-label="Filtrar por estado de envío">
+                  <option value="ALL">Todos los estados de envío</option>
+                  <option value="Pendiente Despacho">Pendiente Despacho</option>
+                  <option value="En Tránsito">En Tránsito</option>
+                  <option value="En Reparto">En Reparto</option>
+                  <option value="Novedad">⚠️ Con Novedad</option>
+                  <option value="Entregado">✅ Entregado</option>
+                  <option value="Devuelto">❌ Devuelto (RTS)</option>
+                </select>
+
+                <select class="select-control" id="orders-carrier-filter" aria-label="Filtrar por transportadora">
+                  <option value="ALL">Todas las transportadoras</option>
+                  <option value="Coordinadora">Coordinadora</option>
+                  <option value="Interrapidísimo">Interrapidísimo</option>
+                  <option value="Servientrega">Servientrega</option>
+                  <option value="Envía">Envía</option>
+                  <option value="Domicilio Local">Domicilio Local</option>
+                </select>
+              </div>
+
+              <div style="display:flex; gap:0.5rem;">
+                <button type="button" class="btn btn-secondary" id="btn-export-orders-csv">Exportar CSV</button>
+                <button type="button" class="btn btn-primary" id="btn-new-order-table">+ Nuevo Pedido</button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Pedido / Fecha</th>
+                    <th>Cliente &amp; Destino</th>
+                    <th>Producto (Cant.)</th>
+                    <th>Modalidad &amp; Pago</th>
+                    <th>Transportadora &amp; Guía</th>
+                    <th>Estado de Envío</th>
+                    <th>Venta Total</th>
+                    <th>Costo + Flete</th>
+                    <th>Utilidad Real</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="orders-table-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 3: RETURNS & RTS ==================== -->
+        <section class="view-panel" id="view-returns">
+          <div class="kpi-grid" id="returns-mini-kpis"></div>
+
+          <div class="panel-card">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title">Centro de Devoluciones Contraentrega (RTS) y Garantías</h2>
+                <p class="panel-subtitle">Controla la mercancía que vuelve a bodega, reintegra unidades al inventario en 1 clic y audita el costo de fletes perdidos</p>
+              </div>
+              <button type="button" class="btn btn-primary" id="btn-open-return-modal">+ Registrar Devolución</button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID / Fecha</th>
+                    <th>Pedido Shopify</th>
+                    <th>Cliente</th>
+                    <th>Producto (Unid.)</th>
+                    <th>Tipo / Transportadora</th>
+                    <th>Motivo de Devolución</th>
+                    <th>Flete Perdido</th>
+                    <th>Reembolso</th>
+                    <th>Estado Mercancía / Stock</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="returns-table-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 4: EXPENSES & ADS ==================== -->
+        <section class="view-panel" id="view-expenses">
+          <div class="kpi-grid" id="expenses-mini-kpis"></div>
+
+          <div class="panel-card">
+            <div class="table-toolbar">
+              <div class="toolbar-search-group">
+                <div class="search-input-wrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
+                  </svg>
+                  <input type="search" class="input-control" id="expenses-search-input" placeholder="Buscar gasto por concepto, campaña o referencia..." />
+                </div>
+
+                <select class="select-control" id="expenses-category-filter" aria-label="Filtrar por categoría de gasto">
+                  <option value="ALL">Todas las categorías</option>
+                  <option value="Publicidad (Meta / TikTok Ads)">Publicidad (Meta / TikTok Ads)</option>
+                  <option value="Plataforma & Apps Shopify">Plataforma &amp; Apps Shopify</option>
+                  <option value="Logística & Empaque">Logística &amp; Empaque</option>
+                  <option value="Inventario / Proveedores">Inventario / Proveedores</option>
+                  <option value="Comisiones & Impuestos">Comisiones &amp; Impuestos</option>
+                  <option value="Operación / Otros">Operación / Otros</option>
+                </select>
+              </div>
+
+              <div style="display:flex; gap:0.5rem;">
+                <button type="button" class="btn btn-secondary" id="btn-export-expenses-csv">Exportar Gastos CSV</button>
+                <button type="button" class="btn btn-primary" id="btn-new-expense-table">+ Registrar Gasto</button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Concepto / Campaña</th>
+                    <th>Categoría</th>
+                    <th>Método de Pago</th>
+                    <th>Referencia</th>
+                    <th>Estado</th>
+                    <th>Monto (COP)</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="expenses-table-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 5: PRODUCTS, STOCK & SIMULATOR ==================== -->
+        <section class="view-panel" id="view-products">
+          <!-- Unit Economics & CPA Calculator -->
+          <div class="panel-card" style="margin-bottom: 1.5rem;">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title">Calculadora de Rentabilidad Shopify &amp; CPA Máximo (Contraentrega + Anticipado)</h2>
+                <p class="panel-subtitle">Simula cuánto ganas realmente por cada pedido despachado teniendo en cuenta el porcentaje de devolución (RTS) y el costo por compra en Meta/TikTok Ads</p>
+              </div>
+              <span class="status-badge status-entregado">Simulador Unit Economics</span>
+            </div>
+            <div class="panel-body">
+              <div class="simulator-grid">
+                <div class="sim-inputs">
+                  <div class="form-group">
+                    <label for="sim-product-select">Cargar datos de un producto actual</label>
+                    <select class="select-control" id="sim-product-select"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="sim-sale-price">Precio de Venta en Shopify (COP)</label>
+                    <input type="number" class="input-control mono" id="sim-sale-price" value="249900" step="1000" />
+                  </div>
+                  <div class="form-group">
+                    <label for="sim-cost-price">Costo del Producto / Proveedor (COP)</label>
+                    <input type="number" class="input-control mono" id="sim-cost-price" value="112000" step="1000" />
+                  </div>
+                  <div class="form-group">
+                    <label for="sim-shipping-cost">Flete Promedio Transportadora (COP)</label>
+                    <input type="number" class="input-control mono" id="sim-shipping-cost" value="16500" step="500" />
+                  </div>
+                  <div class="form-group">
+                    <label for="sim-cpa-ads">CPA Promedio Meta/TikTok Ads (COP)</label>
+                    <input type="number" class="input-control mono" id="sim-cpa-ads" value="28000" step="1000" />
+                    <small>Costo publicitario por cada pedido confirmado</small>
+                  </div>
+                  <div class="form-group">
+                    <label for="sim-rts-rate">% Estimado de Devolución COD (RTS)</label>
+                    <input type="number" class="input-control mono" id="sim-rts-rate" value="12" min="0" max="60" step="1" />
+                    <small>Ej: 12% de pedidos devueltos pierden flete + pauta</small>
+                  </div>
+                </div>
+
+                <div class="sim-results-box">
+                  <div>
+                    <div class="sim-metric-row">
+                      <span>Utilidad si el pedido es <strong>Entregado</strong>:</span>
+                      <strong class="mono" id="sim-profit-if-delivered">$ 0</strong>
+                    </div>
+                    <div class="sim-metric-row">
+                      <span>Pérdida si el pedido es <strong>Devuelto (RTS)</strong>:</span>
+                      <strong class="mono" style="color: var(--color-danger);" id="sim-loss-if-returned">$ 0</strong>
+                    </div>
+                    <div class="sim-metric-row">
+                      <span><strong>CPA Máximo (Punto de Equilibrio)</strong> con esa devolución:</span>
+                      <strong class="mono" style="color: var(--color-info);" id="sim-breakeven-cpa">$ 0</strong>
+                    </div>
+                    <div class="sim-metric-row">
+                      <span><strong>ROAS Mínimo Rentable</strong>:</span>
+                      <strong class="mono" id="sim-min-roas">0.0x</strong>
+                    </div>
+                  </div>
+
+                  <div class="pnl-total-box" style="margin-top:0;">
+                    <div>
+                      <div class="pnl-total-label">Utilidad Neta Real Esperada por Pedido</div>
+                      <div style="font-size:0.74rem; color:var(--text-secondary);" id="sim-margin-Readout">Ponderando efectividad de entrega</div>
+                    </div>
+                    <div class="pnl-total-value" id="sim-expected-net-profit">$ 0</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Products & Stock Table -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title">Catálogo de Productos Shopify &amp; Control de Inventario</h2>
+                <p class="panel-subtitle">Administra costos de proveedor, precios de venta, alertas de stock bajo y desempeño por SKU</p>
+              </div>
+              <button type="button" class="btn btn-primary" id="btn-open-product-modal">+ Nuevo Producto</button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>SKU / Producto</th>
+                    <th>Categoría</th>
+                    <th>Costo Proveedor</th>
+                    <th>Precio Shopify</th>
+                    <th>Flete Prom.</th>
+                    <th>Margen Unitario</th>
+                    <th>Stock Disponible</th>
+                    <th>Unid. Entregadas / Devueltas</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="products-table-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 1: CREATE / EDIT ORDER ==================== -->
+  <div class="modal-backdrop" id="modal-order">
+    <div class="modal-dialog" role="dialog" aria-labelledby="modal-order-title">
+      <div class="modal-header">
+        <h3 id="modal-order-title">Registrar Pedido de Shopify</h3>
+        <button type="button" class="btn-icon" data-close-modal="modal-order" aria-label="Cerrar">✕</button>
+      </div>
+      <form id="form-order">
+        <input type="hidden" id="order-id-input" />
+        <div class="modal-body">
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label for="order-shopify-num"># Pedido Shopify</label>
+              <input type="text" class="input-control mono" id="order-shopify-num" placeholder="#SH-1053" required />
+            </div>
+            <div class="form-group">
+              <label for="order-date">Fecha del Pedido</label>
+              <input type="date" class="input-control" id="order-date" required />
+            </div>
+            <div class="form-group">
+              <label for="order-payment-model">Modalidad de Pago</label>
+              <select class="select-control" id="order-payment-model" required>
+                <option value="Contraentrega (COD)">Contraentrega (COD)</option>
+                <option value="Pago Anticipado">Pago Anticipado</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label for="order-customer-name">Nombre del Cliente</label>
+              <input type="text" class="input-control" id="order-customer-name" placeholder="Ej. Mateo Londoño" required />
+            </div>
+            <div class="form-group">
+              <label for="order-customer-phone">WhatsApp / Teléfono</label>
+              <input type="text" class="input-control mono" id="order-customer-phone" placeholder="573001234567" required />
+            </div>
+            <div class="form-group">
+              <label for="order-city">Ciudad y Departamento</label>
+              <input type="text" class="input-control" id="order-city" placeholder="Ej. Medellín, ANT" required />
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="order-product-select">Producto de la Tienda</label>
+              <select class="select-control" id="order-product-select" required></select>
+            </div>
+            <div class="form-group">
+              <label for="order-quantity">Cantidad (Unidades)</label>
+              <input type="number" class="input-control mono" id="order-quantity" value="1" min="1" required />
+            </div>
+          </div>
+
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label for="order-carrier">Transportadora</label>
+              <select class="select-control" id="order-carrier">
+                <option value="Coordinadora">Coordinadora</option>
+                <option value="Interrapidísimo">Interrapidísimo</option>
+                <option value="Servientrega">Servientrega</option>
+                <option value="Envía">Envía</option>
+                <option value="Domicilio Local">Domicilio Local</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="order-tracking">Número de Guía</label>
+              <input type="text" class="input-control mono" id="order-tracking" placeholder="Ej. 24001948990" />
+            </div>
+            <div class="form-group">
+              <label for="order-shipping-status">Estado de Envío</label>
+              <select class="select-control" id="order-shipping-status">
+                <option value="Pendiente Despacho">Pendiente Despacho</option>
+                <option value="En Tránsito">En Tránsito</option>
+                <option value="En Reparto">En Reparto</option>
+                <option value="Novedad">Novedad</option>
+                <option value="Entregado">Entregado</option>
+                <option value="Devuelto">Devuelto</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label for="order-sale-total">Total Venta Cobrado (COP)</label>
+              <input type="number" class="input-control mono" id="order-sale-total" required />
+            </div>
+            <div class="form-group">
+              <label for="order-cost-total">Costo Mercancía Total (COP)</label>
+              <input type="number" class="input-control mono" id="order-cost-total" required />
+            </div>
+            <div class="form-group">
+              <label for="order-shipping-cost">Costo Flete Envío (COP)</label>
+              <input type="number" class="input-control mono" id="order-shipping-cost" required />
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="order-payment-detail">Medio de Pago / Pasarela</label>
+              <input type="text" class="input-control" id="order-payment-detail" placeholder="Efectivo al recibir / Wompi PSE / Nequi" />
+            </div>
+            <div class="form-group">
+              <label for="order-gateway-fee">Comisión Pasarela (COP)</label>
+              <input type="number" class="input-control mono" id="order-gateway-fee" value="0" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="order-notes">Notas Operativas / Novedad de Entrega</label>
+            <input type="text" class="input-control" id="order-notes" placeholder="Instrucciones de entrega o seguimiento de transportadora..." />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal="modal-order">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Pedido</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: CREATE / EDIT EXPENSE ==================== -->
+  <div class="modal-backdrop" id="modal-expense">
+    <div class="modal-dialog" role="dialog" aria-labelledby="modal-expense-title">
+      <div class="modal-header">
+        <h3 id="modal-expense-title">Registrar Gasto o Inversión en Publicidad</h3>
+        <button type="button" class="btn-icon" data-close-modal="modal-expense" aria-label="Cerrar">✕</button>
+      </div>
+      <form id="form-expense">
+        <input type="hidden" id="expense-id-input" />
+        <div class="modal-body">
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="expense-date">Fecha del Gasto</label>
+              <input type="date" class="input-control" id="expense-date" required />
+            </div>
+            <div class="form-group">
+              <label for="expense-category">Categoría Contable</label>
+              <select class="select-control" id="expense-category" required>
+                <option value="Publicidad (Meta / TikTok Ads)">Publicidad (Meta / TikTok Ads)</option>
+                <option value="Plataforma & Apps Shopify">Plataforma &amp; Apps Shopify</option>
+                <option value="Logística & Empaque">Logística &amp; Empaque</option>
+                <option value="Inventario / Proveedores">Inventario / Proveedores</option>
+                <option value="Comisiones & Impuestos">Comisiones &amp; Impuestos</option>
+                <option value="Operación / Otros">Operación / Otros</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="expense-concept">Concepto / Descripción detallada</label>
+            <input type="text" class="input-control" id="expense-concept" placeholder="Ej. Pauta Meta Ads Campaña Proyector / Bolsas de seguridad" required />
+          </div>
+
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label for="expense-amount">Monto en Pesos (COP)</label>
+              <input type="number" class="input-control mono" id="expense-amount" placeholder="150000" required />
+            </div>
+            <div class="form-group">
+              <label for="expense-method">Método de Pago</label>
+              <input type="text" class="input-control" id="expense-method" placeholder="Tarjeta Crédito / Nequi" required />
+            </div>
+            <div class="form-group">
+              <label for="expense-status">Estado</label>
+              <select class="select-control" id="expense-status">
+                <option value="Pagado">Pagado</option>
+                <option value="Pendiente">Pendiente</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="expense-reference">Referencia / Factura (Opcional)</label>
+            <input type="text" class="input-control mono" id="expense-reference" placeholder="Ej. META-9981" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal="modal-expense">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Gasto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 3: REGISTER RETURN / RTS ==================== -->
+  <div class="modal-backdrop" id="modal-return">
+    <div class="modal-dialog" role="dialog" aria-labelledby="modal-return-title">
+      <div class="modal-header">
+        <h3 id="modal-return-title">Registrar Devolución (RTS) o Garantía</h3>
+        <button type="button" class="btn-icon" data-close-modal="modal-return" aria-label="Cerrar">✕</button>
+      </div>
+      <form id="form-return">
+        <div class="modal-body">
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="return-order-select">Seleccionar Pedido Asociado</label>
+              <select class="select-control" id="return-order-select" required></select>
+            </div>
+            <div class="form-group">
+              <label for="return-date">Fecha de Devolución</label>
+              <input type="date" class="input-control" id="return-date" required />
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="return-type">Tipo de Devolución</label>
+              <select class="select-control" id="return-type">
+                <option value="Devolución COD (RTS)">Devolución Contraentrega (No entregado)</option>
+                <option value="Garantía / Cambio">Garantía / Cambio de Producto</option>
+                <option value="Reembolso Cliente">Reembolso Dinero (Pago Anticipado)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="return-resolution">Estado de la Mercancía</label>
+              <select class="select-control" id="return-resolution">
+                <option value="En Tránsito a Bodega">En Tránsito a Bodega</option>
+                <option value="Reintegrado a Stock">Reintegrado a Stock (Suma al inventario)</option>
+                <option value="Avería / Pérdida">Producto Dañado / Pérdida</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="return-lost-shipping">Costo de Flete Perdido (COP)</label>
+              <input type="number" class="input-control mono" id="return-lost-shipping" value="16000" required />
+            </div>
+            <div class="form-group">
+              <label for="return-refund-amount">Monto Reembolsado al Cliente (COP)</label>
+              <input type="number" class="input-control mono" id="return-refund-amount" value="0" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="return-reason">Motivo reportado por transportadora o cliente</label>
+            <input type="text" class="input-control" id="return-reason" placeholder="Ej. Cliente no contestó llamadas / Dirección errada / Garantía" required />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal="modal-return">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Devolución</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 4: CREATE / EDIT PRODUCT ==================== -->
+  <div class="modal-backdrop" id="modal-product">
+    <div class="modal-dialog" role="dialog" aria-labelledby="modal-product-title">
+      <div class="modal-header">
+        <h3 id="modal-product-title">Crear / Editar Producto de Shopify</h3>
+        <button type="button" class="btn-icon" data-close-modal="modal-product" aria-label="Cerrar">✕</button>
+      </div>
+      <form id="form-product">
+        <input type="hidden" id="product-id-input" />
+        <div class="modal-body">
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="product-sku">SKU / Referencia</label>
+              <input type="text" class="input-control mono" id="product-sku" placeholder="SHP-PROD-01" required />
+            </div>
+            <div class="form-group">
+              <label for="product-category">Categoría</label>
+              <input type="text" class="input-control" id="product-category" placeholder="Tecnología / Hogar / Belleza" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="product-name">Nombre Comercial en Shopify</label>
+            <input type="text" class="input-control" id="product-name" placeholder="Ej. Mini Proyector Smart HY300" required />
+          </div>
+
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label for="product-cost">Costo Proveedor (COP)</label>
+              <input type="number" class="input-control mono" id="product-cost" required />
+            </div>
+            <div class="form-group">
+              <label for="product-price">Precio Venta Shopify (COP)</label>
+              <input type="number" class="input-control mono" id="product-price" required />
+            </div>
+            <div class="form-group">
+              <label for="product-shipping">Flete Promedio (COP)</label>
+              <input type="number" class="input-control mono" id="product-shipping" value="15500" required />
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="product-stock">Stock Actual en Bodega</label>
+              <input type="number" class="input-control mono" id="product-stock" value="20" required />
+            </div>
+            <div class="form-group">
+              <label for="product-min-stock">Alerta de Stock Mínimo</label>
+              <input type="number" class="input-control mono" id="product-min-stock" value="8" required />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal="modal-product">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Producto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 5: SHOPIFY CSV IMPORT & BACKUP ==================== -->
+  <div class="modal-backdrop" id="modal-csv">
+    <div class="modal-dialog" role="dialog" aria-labelledby="modal-csv-title">
+      <div class="modal-header">
+        <h3 id="modal-csv-title">Importar CSV de Shopify &amp; Respaldo Contable</h3>
+        <button type="button" class="btn-icon" data-close-modal="modal-csv" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="padding: 1rem; border-radius: var(--radius-sm); background-color: var(--bg-surface-subtle); border: 1px solid var(--border-subtle);">
+          <h4 style="font-size: 0.9rem; margin-bottom: 0.35rem;">1. Importar Pedidos desde Archivo CSV de Shopify o Excel</h4>
+          <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.85rem;">
+            Sube el archivo <code>orders_export.csv</code> exportado directamente de tu panel de Shopify o usa nuestra plantilla CSV rápida con guías y transportadoras.
+          </p>
+          <div style="display:flex; gap:0.65rem; flex-wrap:wrap; align-items:center;">
+            <input type="file" id="csv-file-input" accept=".csv" class="input-control" style="flex:1;" />
+            <button type="button" class="btn btn-primary" id="btn-process-csv">Procesar CSV</button>
+            <button type="button" class="btn btn-secondary" id="btn-download-template-csv">Descargar Plantilla CSV</button>
+          </div>
+        </div>
+
+        <div style="padding: 1rem; border-radius: var(--radius-sm); background-color: var(--bg-surface-subtle); border: 1px solid var(--border-subtle);">
+          <h4 style="font-size: 0.9rem; margin-bottom: 0.35rem;">2. Copia de Seguridad Completa (JSON) y Reportes Excel</h4>
+          <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.85rem;">
+            Todos tus datos se guardan automáticamente en este navegador. También puedes descargar un respaldo completo o restaurar los datos de demostración.
+          </p>
+          <div style="display:flex; gap:0.65rem; flex-wrap:wrap;">
+            <button type="button" class="btn btn-secondary" id="btn-backup-json">Descargar Respaldo (.JSON)</button>
+            <button type="button" class="btn btn-danger-soft" id="btn-reset-demo">Restaurar Datos Demo Iniciales</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal="modal-csv">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="./data.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
