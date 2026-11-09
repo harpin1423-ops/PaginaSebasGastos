@@ -10,7 +10,7 @@ const INITIAL_DATA = {
     storeName: 'Sebas E-Commerce Store',
     currency: 'COP',
     defaultGatewayRate: 3.2, // % comisión pasarela promedio (Wompi/MercadoPago)
-    targetDeliveryRate: 85,  // % meta de efectividad de entrega
+    targetDeliveryRate: 85   // % meta de efectividad de entrega
   },
   products: [
     {
@@ -18,8 +18,11 @@ const INITIAL_DATA = {
       sku: 'SHP-PROY-4K',
       name: 'Mini Proyector Smart HY300 Full HD WiFi',
       category: 'Tecnología & Hogar',
+      fulfillmentType: 'Stock Propio',
+      supplier: 'Importadora Digital Medellín',
       costPrice: 112000,
       salePrice: 249900,
+      compareAtPrice: 329900,
       avgShippingCost: 16500,
       stock: 34,
       minStock: 10,
@@ -30,8 +33,11 @@ const INITIAL_DATA = {
       sku: 'SHP-MASG-PRO',
       name: 'Masajeador Cervical Térmico Shiatsu 4D',
       category: 'Bienestar & Salud',
+      fulfillmentType: 'Stock Propio',
+      supplier: 'Wellness Import Bogotá',
       costPrice: 54000,
       salePrice: 149900,
+      compareAtPrice: 199900,
       avgShippingCost: 14800,
       stock: 19,
       minStock: 8,
@@ -42,20 +48,26 @@ const INITIAL_DATA = {
       sku: 'SHP-RELOJ-U9',
       name: 'Smartwatch Ultra Series 9 + 3 Correas',
       category: 'Gadgets & Wearables',
+      fulfillmentType: 'Stock Propio',
+      supplier: 'Shenzhen Direct / Bodega Cali',
       costPrice: 46000,
       salePrice: 139900,
+      compareAtPrice: 189900,
       avgShippingCost: 14200,
       stock: 6,
       minStock: 12,
-      status: 'Stock Bajo'
+      status: 'Activo'
     },
     {
       id: 'PRD-04',
       sku: 'SHP-DEPIL-IPL',
       name: 'Depiladora Láser IPL Zafiro Indolora',
       category: 'Cuidado Personal',
+      fulfillmentType: 'Dropshipping (Dropi)',
+      supplier: 'Bodega Master Dropi Bogotá',
       costPrice: 78000,
       salePrice: 199900,
+      compareAtPrice: 259900,
       avgShippingCost: 15000,
       stock: 25,
       minStock: 8,
@@ -66,20 +78,26 @@ const INITIAL_DATA = {
       sku: 'SHP-ASPIR-CAR',
       name: 'Aspiradora Inalámbrica Turbo 3 en 1 Auto/Hogar',
       category: 'Hogar & Autos',
+      fulfillmentType: 'Stock Propio',
+      supplier: 'Importadora Digital Medellín',
       costPrice: 38000,
       salePrice: 119900,
+      compareAtPrice: 159900,
       avgShippingCost: 14500,
       stock: 4,
       minStock: 10,
-      status: 'Stock Bajo'
+      status: 'Activo'
     },
     {
       id: 'PRD-06',
       sku: 'SHP-CAM-WIFI',
       name: 'Cámara Seguridad Domo 360° Doble Lente WiFi',
       category: 'Seguridad',
+      fulfillmentType: 'Dropshipping (Dropi)',
+      supplier: 'SecurTech Proveedor Dropi',
       costPrice: 62000,
       salePrice: 169900,
+      compareAtPrice: 219900,
       avgShippingCost: 15500,
       stock: 28,
       minStock: 8,
@@ -333,7 +351,7 @@ const INITIAL_DATA = {
       id: 'ORD-1041',
       shopifyOrderNumber: '#SH-1041',
       date: '2026-11-01',
-      customerName: 'MauricioAlejandro Duarte',
+      customerName: 'Mauricio Alejandro Duarte',
       customerPhone: '573138492019',
       city: 'Medellín, ANT',
       productId: 'PRD-01',
@@ -472,6 +490,14 @@ function loadAppState() {
     if (!parsed.orders || !parsed.products || !parsed.expenses || !parsed.returns) {
       throw new Error('Invalid state schema');
     }
+    // Ensure enriched product fields exist
+    parsed.products = parsed.products.map(p => ({
+      fulfillmentType: p.fulfillmentType || 'Stock Propio',
+      supplier: p.supplier || 'Proveedor Principal',
+      compareAtPrice: p.compareAtPrice || Math.round((Number(p.salePrice) || 0) * 1.25),
+      status: p.status === 'Inactivo' ? 'Inactivo' : 'Activo',
+      ...p
+    }));
     return parsed;
   } catch (err) {
     console.warn('Restoring default data state:', err);

@@ -44,13 +44,25 @@
           <button type="button" class="nav-item" id="nav-btn-orders" data-view="orders">
             <span class="nav-item-left">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" stroke-linecap="round" stroke-linejoin="round" style="display:none"/>
                 <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
                 <path d="m3.3 7 8.7 5 8.7-5M12 22V12" />
               </svg>
               <span>Pedidos &amp; Envíos</span>
             </span>
             <span class="nav-badge" id="badge-orders-count">0</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="nav-item" id="nav-btn-products" data-view="products">
+            <span class="nav-item-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m7.5 4.27 9 5.15" />
+                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <span>Gestor de Productos</span>
+            </span>
+            <span class="nav-badge badge-alert" id="badge-low-stock">0</span>
           </button>
         </li>
         <li>
@@ -78,16 +90,16 @@
           </button>
         </li>
         <li>
-          <button type="button" class="nav-item" id="nav-btn-products" data-view="products">
+          <button type="button" class="nav-item" id="nav-btn-simulator" data-view="simulator">
             <span class="nav-item-left">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="m7.5 4.27 9 5.15" />
-                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-                <circle cx="12" cy="12" r="3" />
+                <rect x="4" y="2" width="16" height="20" rx="2" />
+                <line x1="8" x2="16" y1="6" y2="6" />
+                <line x1="16" x2="16" y1="14" y2="18" />
+                <path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01" />
               </svg>
-              <span>Productos &amp; Calculadora</span>
+              <span>Calculadora CPA / ROAS</span>
             </span>
-            <span class="nav-badge badge-alert" id="badge-low-stock">0</span>
           </button>
         </li>
       </ul>
@@ -150,6 +162,14 @@
           </div>
 
           <!-- Quick Action Buttons -->
+          <button type="button" class="btn btn-secondary" id="btn-quick-product">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <span>Nuevo Producto</span>
+          </button>
+
           <button type="button" class="btn btn-secondary" id="btn-quick-expense">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="12" y1="5" x2="12" y2="19" />
@@ -477,10 +497,89 @@
           </div>
         </section>
 
-        <!-- ==================== VIEW 5: PRODUCTS, STOCK & SIMULATOR ==================== -->
+        <!-- ==================== VIEW 5: GESTOR DE PRODUCTOS & INVENTARIO ==================== -->
         <section class="view-panel" id="view-products">
-          <!-- Unit Economics & CPA Calculator -->
-          <div class="panel-card" style="margin-bottom: 1.5rem;">
+          <!-- KPIs de Valoración de Inventario y Catálogo -->
+          <div class="kpi-grid" id="products-mini-kpis"></div>
+
+          <!-- Gestor de Productos Principal -->
+          <div class="panel-card">
+            <div class="table-toolbar">
+              <div class="toolbar-search-group">
+                <div class="search-input-wrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
+                  </svg>
+                  <input type="search" class="input-control" id="products-search-input" placeholder="Buscar por nombre, SKU, proveedor o categoría..." />
+                </div>
+
+                <select class="select-control" id="products-category-filter" aria-label="Filtrar por categoría">
+                  <option value="ALL">Todas las categorías</option>
+                  <option value="Tecnología & Hogar">Tecnología &amp; Hogar</option>
+                  <option value="Bienestar & Salud">Bienestar &amp; Salud</option>
+                  <option value="Gadgets & Wearables">Gadgets &amp; Wearables</option>
+                  <option value="Cuidado Personal">Cuidado Personal</option>
+                  <option value="Hogar & Autos">Hogar &amp; Autos</option>
+                  <option value="Seguridad">Seguridad</option>
+                </select>
+
+                <select class="select-control" id="products-fulfillment-filter" aria-label="Filtrar por logística">
+                  <option value="ALL">Todo origen (Propio + Dropi)</option>
+                  <option value="Stock Propio">🏢 Stock Propio (Bodega)</option>
+                  <option value="Dropshipping (Dropi)">🚚 Dropshipping (Dropi / Effi)</option>
+                </select>
+
+                <select class="select-control" id="products-stock-filter" aria-label="Filtrar por nivel de stock">
+                  <option value="ALL">Todos los niveles de stock</option>
+                  <option value="OPTIMAL">✅ Stock Óptimo</option>
+                  <option value="LOW">⚠️ Stock Bajo / Crítico</option>
+                  <option value="OUT">❌ Agotados (0 und)</option>
+                </select>
+              </div>
+
+              <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                <div class="filter-pill-group" role="group" aria-label="Cambiar vista de productos">
+                  <button type="button" class="filter-pill active" id="btn-prod-view-table">Tabla</button>
+                  <button type="button" class="filter-pill" id="btn-prod-view-cards">Tarjetas</button>
+                </div>
+                <button type="button" class="btn btn-secondary" id="btn-export-products-csv">Exportar CSV</button>
+                <button type="button" class="btn btn-secondary" id="btn-open-restock-modal">📦 + Reabastecer Stock</button>
+                <button type="button" class="btn btn-primary" id="btn-open-product-modal">+ Nuevo Producto</button>
+              </div>
+            </div>
+
+            <!-- Vista 1: Tabla Detallada de Productos -->
+            <div class="table-responsive" id="products-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>SKU / Producto</th>
+                    <th>Categoría &amp; Proveedor</th>
+                    <th>Modalidad</th>
+                    <th>Costo Proveedor</th>
+                    <th>Precio Shopify</th>
+                    <th>Flete Prom.</th>
+                    <th>Margen Unitario</th>
+                    <th>Stock en Bodega</th>
+                    <th>Capital en Stock</th>
+                    <th>Rendimiento (Ent. / Dev.)</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="products-table-tbody"></tbody>
+              </table>
+            </div>
+
+            <!-- Vista 2: Cuadrícula de Tarjetas de Productos -->
+            <div class="products-cards-grid" id="products-cards-wrap" style="display:none;"></div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 6: CALCULADORA UNIT ECONOMICS (CPA / ROAS) ==================== -->
+        <section class="view-panel" id="view-simulator">
+          <div class="panel-card">
             <div class="panel-header">
               <div>
                 <h2 class="panel-title">Calculadora de Rentabilidad Shopify &amp; CPA Máximo (Contraentrega + Anticipado)</h2>
@@ -492,7 +591,7 @@
               <div class="simulator-grid">
                 <div class="sim-inputs">
                   <div class="form-group">
-                    <label for="sim-product-select">Cargar datos de un producto actual</label>
+                    <label for="sim-product-select">Cargar datos de un producto del catálogo</label>
                     <select class="select-control" id="sim-product-select"></select>
                   </div>
                   <div class="form-group">
@@ -548,36 +647,6 @@
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <!-- Products & Stock Table -->
-          <div class="panel-card">
-            <div class="panel-header">
-              <div>
-                <h2 class="panel-title">Catálogo de Productos Shopify &amp; Control de Inventario</h2>
-                <p class="panel-subtitle">Administra costos de proveedor, precios de venta, alertas de stock bajo y desempeño por SKU</p>
-              </div>
-              <button type="button" class="btn btn-primary" id="btn-open-product-modal">+ Nuevo Producto</button>
-            </div>
-
-            <div class="table-responsive">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>SKU / Producto</th>
-                    <th>Categoría</th>
-                    <th>Costo Proveedor</th>
-                    <th>Precio Shopify</th>
-                    <th>Flete Prom.</th>
-                    <th>Margen Unitario</th>
-                    <th>Stock Disponible</th>
-                    <th>Unid. Entregadas / Devueltas</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="products-table-tbody"></tbody>
-              </table>
             </div>
           </div>
         </section>
@@ -833,7 +902,7 @@
     </div>
   </div>
 
-  <!-- ==================== MODAL 4: CREATE / EDIT PRODUCT ==================== -->
+  <!-- ==================== MODAL 4: CREATE / EDIT PRODUCT (GESTOR DE PRODUCTOS) ==================== -->
   <div class="modal-backdrop" id="modal-product">
     <div class="modal-dialog" role="dialog" aria-labelledby="modal-product-title">
       <div class="modal-header">
@@ -843,30 +912,59 @@
       <form id="form-product">
         <input type="hidden" id="product-id-input" />
         <div class="modal-body">
-          <div class="form-grid-2">
+          <div class="form-grid-3">
             <div class="form-group">
               <label for="product-sku">SKU / Referencia</label>
               <input type="text" class="input-control mono" id="product-sku" placeholder="SHP-PROD-01" required />
             </div>
             <div class="form-group">
               <label for="product-category">Categoría</label>
-              <input type="text" class="input-control" id="product-category" placeholder="Tecnología / Hogar / Belleza" required />
+              <input type="text" class="input-control" id="product-category" list="product-categories-list" placeholder="Tecnología & Hogar" required />
+              <datalist id="product-categories-list">
+                <option value="Tecnología & Hogar"></option>
+                <option value="Bienestar & Salud"></option>
+                <option value="Gadgets & Wearables"></option>
+                <option value="Cuidado Personal"></option>
+                <option value="Hogar & Autos"></option>
+                <option value="Seguridad"></option>
+              </datalist>
+            </div>
+            <div class="form-group">
+              <label for="product-status">Estado en Tienda</label>
+              <select class="select-control" id="product-status">
+                <option value="Activo">Activo (En venta)</option>
+                <option value="Inactivo">Inactivo / Pausado</option>
+              </select>
             </div>
           </div>
 
           <div class="form-group">
-            <label for="product-name">Nombre Comercial en Shopify</label>
-            <input type="text" class="input-control" id="product-name" placeholder="Ej. Mini Proyector Smart HY300" required />
+            <label for="product-name">Nombre Comercial del Producto en Shopify</label>
+            <input type="text" class="input-control" id="product-name" placeholder="Ej. Mini Proyector Smart HY300 Full HD WiFi" required />
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="product-fulfillment">Modalidad Logística</label>
+              <select class="select-control" id="product-fulfillment">
+                <option value="Stock Propio">Stock Propio (Bodega Propia)</option>
+                <option value="Dropshipping (Dropi)">Dropshipping (Dropi / Effi)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="product-supplier">Proveedor / Bodega Origen</label>
+              <input type="text" class="input-control" id="product-supplier" placeholder="Ej. Importadora Medellín / Bodega Dropi" required />
+            </div>
           </div>
 
           <div class="form-grid-3">
             <div class="form-group">
               <label for="product-cost">Costo Proveedor (COP)</label>
-              <input type="number" class="input-control mono" id="product-cost" required />
+              <input type="number" class="input-control mono" id="product-cost" placeholder="85000" required />
             </div>
             <div class="form-group">
               <label for="product-price">Precio Venta Shopify (COP)</label>
-              <input type="number" class="input-control mono" id="product-price" required />
+              <input type="number" class="input-control mono" id="product-price" placeholder="199900" required />
             </div>
             <div class="form-group">
               <label for="product-shipping">Flete Promedio (COP)</label>
@@ -874,9 +972,13 @@
             </div>
           </div>
 
-          <div class="form-grid-2">
+          <div class="form-grid-3">
             <div class="form-group">
-              <label for="product-stock">Stock Actual en Bodega</label>
+              <label for="product-compare-price">Precio Tachado / Antes (COP)</label>
+              <input type="number" class="input-control mono" id="product-compare-price" placeholder="249900" />
+            </div>
+            <div class="form-group">
+              <label for="product-stock">Stock Actual Disponible</label>
               <input type="number" class="input-control mono" id="product-stock" value="20" required />
             </div>
             <div class="form-group">
@@ -884,10 +986,60 @@
               <input type="number" class="input-control mono" id="product-min-stock" value="8" required />
             </div>
           </div>
+
+          <!-- Live Margin Preview inside Modal -->
+          <div class="pnl-total-box" style="margin-top:0.25rem;">
+            <div>
+              <div class="pnl-total-label">Margen Operativo Unitario (Venta − Costo − Flete)</div>
+              <div style="font-size:0.74rem; color:var(--text-secondary);" id="modal-prod-margin-pct">Rentabilidad antes de pauta publicitaria</div>
+            </div>
+            <div class="pnl-total-value" id="modal-prod-margin-val">$ 0</div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-close-modal="modal-product">Cancelar</button>
           <button type="submit" class="btn btn-primary">Guardar Producto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 5: RESTOCK INVENTORY (ENTRADA DE MERCANCÍA) ==================== -->
+  <div class="modal-backdrop" id="modal-restock">
+    <div class="modal-dialog" role="dialog" aria-labelledby="modal-restock-title">
+      <div class="modal-header">
+        <h3 id="modal-restock-title">📦 Reabastecer Inventario / Entrada a Bodega</h3>
+        <button type="button" class="btn-icon" data-close-modal="modal-restock" aria-label="Cerrar">✕</button>
+      </div>
+      <form id="form-restock">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="restock-product-select">Seleccionar Producto a Reabastecer</label>
+            <select class="select-control" id="restock-product-select" required></select>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="restock-quantity">Cantidad de Unidades que Ingresan (+)</label>
+              <input type="number" class="input-control mono" id="restock-quantity" value="20" min="1" required />
+            </div>
+            <div class="form-group">
+              <label for="restock-unit-cost">Costo Unitario de Compra (COP)</label>
+              <input type="number" class="input-control mono" id="restock-unit-cost" required />
+            </div>
+          </div>
+
+          <div class="form-group" style="padding:0.75rem; background:var(--bg-surface-subtle); border:1px solid var(--border-subtle); border-radius:var(--radius-sm);">
+            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; color:var(--text-primary);">
+              <input type="checkbox" id="restock-log-expense" checked />
+              <span>Registrar esta compra de mercancía automáticamente en el módulo de <strong>Gastos (Proveedores)</strong></span>
+            </label>
+            <small style="margin-top:0.25rem;" id="restock-total-preview">Total inversión lote: $ 0</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal="modal-restock">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Confirmar Entrada de Stock</button>
         </div>
       </form>
     </div>

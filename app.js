@@ -6,6 +6,7 @@
 let appState = loadAppState();
 let currentView = 'dashboard';
 let globalPayModelFilter = 'ALL';
+let productViewMode = 'table';
 
 const VIEW_METADATA = {
   dashboard: {
@@ -16,6 +17,10 @@ const VIEW_METADATA = {
     title: 'Gestión de Pedidos Shopify & Estado de Envíos',
     subtitle: 'Seguimiento de guías por transportadora, recaudo contraentrega, pagos por pasarela y contacto directo por WhatsApp'
   },
+  products: {
+    title: 'Gestor de Productos, Catálogo Shopify & Control de Inventario',
+    subtitle: 'Administración integral de SKUs, precios, márgenes por unidad, valoración de bodega, proveedores y reabastecimiento'
+  },
   returns: {
     title: 'Centro de Devoluciones (RTS), Novedades y Reembolsos',
     subtitle: 'Auditoría de paquetes no entregados, pérdida en fletes y reintegro de mercancía a bodega en 1 clic'
@@ -24,9 +29,9 @@ const VIEW_METADATA = {
     title: 'Control de Gastos Operativos & Publicidad (Ads)',
     subtitle: 'Registro de campañas en Meta Ads, TikTok Ads, suscripción Shopify, empaques, proveedores y comisiones'
   },
-  products: {
-    title: 'Catálogo de Productos, Stock & Calculadora CPA / ROAS',
-    subtitle: 'Control de inventario por SKU, márgenes unitarios y simulador de punto de equilibrio con tasa de devolución'
+  simulator: {
+    title: 'Calculadora de Rentabilidad Unit Economics (CPA / ROAS)',
+    subtitle: 'Simulador de punto de equilibrio en pauta publicitaria ponderando tasa de devolución (RTS) y fletes'
   }
 };
 
@@ -201,7 +206,10 @@ function renderAll() {
   document.getElementById('badge-expenses-count').textContent = appState.expenses.length;
 
   const lowStockCount = appState.products.filter(p => Number(p.stock) <= Number(p.minStock)).length;
-  document.getElementById('badge-low-stock').textContent = lowStockCount;
+  const prodBadge = document.getElementById('badge-low-stock');
+  if (prodBadge) {
+    prodBadge.textContent = lowStockCount > 0 ? `${appState.products.length} (${lowStockCount}⚠️)` : `${appState.products.length}`;
+  }
 
   document.getElementById('sidebar-delivery-pct').textContent = `${m.deliveryEffectivenessPct.toFixed(0)}%`;
   document.getElementById('sidebar-net-profit').textContent = formatCOP(m.netProfit);
@@ -847,15 +855,120 @@ function renderExpensesView() {
    ========================================================================== */
 
 function renderProductsView() {
+  const searchVal = (document.getElementById('products-search-input')?.value || '').toLowerCase().trim();
+  const catFilter = document.getElementById('products-category-filter')?.value || 'ALL';
+  const fulfillmentFilter = document.getElementById('products-fulfillment-filter')?.value || 'ALL';
+  const stockFilter = document.getElementById('products-stock-filter')?.value || 'ALL';
+
+  // Populate dynamic categories in filter select while keeping current selection
+  const catSelect = document.getElementById('products-category-filter');
+  if (catSelect) {
+    const uniqueCats = Array.from(new Set(appState.products.map(p => p.category).filter(Boolean)));
+    const prevVal = catSelect.value || 'ALL';
+    catSelect.innerHTML = `<option value="ALL">Todas las categorías (${uniqueCats.length})</option>` +
+      uniqueCats.map(c => `<option value="${c}">${c}</option>`).join('');
+    catSelect.value = uniqueCats.includes(prevVal) ? prevVal : 'ALL';
+  }
+
+  // Compute Inventory & Catalog KPIs across all products
+  const totalSkus = appState.products.length;
+  const activeSkus = appState.products.filter(p => p.status !== 'Inactivo').length;
+  const totalUnitsInStock = appState.products.reduce((acc, p) => acc + (Number(p.stock) || 0), 0);
+  const inventoryCostValue = appState.products.reduce((acc, p) => acc + ((Number(p.stock) || 0) * (Number(p.costPrice) || 0)), 0);
+  const inventoryRetailValue = appState.products.reduce((acc, p) => acc + ((Number(p.stock) || 0) * (Number(p.salePrice) || 0)), 0);
+  const potentialStockProfit = appState.products.reduce((acc, p) => {
+    const unitNet = (Number(p.salePrice) || 0) - (Number(p.costPrice) || 0) - (Number(p.avgShippingCost) || 0);
+    return acc + ((Number(p.stock) || 0) * unitNet);
+  }, 0);
+  const lowStockCount = appState.products.filter(p => Number(p.stock) > 0 && Number(p.stock) <= Number(p.minStock)).length;
+  const outOfStockCount = appState.products.filter(p => Number(p.stock) <= 0).length;
+
+  const kpiContainer = document.getElementById('products-mini-kpis');
+  if (kpiContainer) {
+    kpiContainer.innerHTML = `
+      <div class="kpi-card">
+        <div class="kpi-header"><span class="kpi-label">Catálogo & Unidades Bodega</span><span class="kpi-tag tag-blue">${activeSkus}/${totalSkus} Activos</span></div>
+        <div class="kpi-value">${totalUnitsInStock} <small style="font-size:0.85rem; font-weight:600; color:var(--text-secondary);">und.</small></div>
+        <div class="kpi-subtext"><span>Referencias creadas:</span><strong class="mono">${totalSkus} SKUs</strong></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-header"><span class="kpi-label">Capital Invertido en Stock</span><span class="kpi-tag tag-emerald">Al Costo</span></div>
+        <div class="kpi-value">${formatCOP(inventoryCostValue)}</div>
+        <div class="kpi-subtext"><span>Valor mercancía en bodega</span><strong class="mono">Costo proveedor</strong></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-header"><span class="kpi-label">Valor Venta Potencial Shopify</span><span class="kpi-tag tag-emerald">PVP Tienda</span></div>
+        <div class="kpi-value" style="color:var(--color-success);">${formatCOP(inventoryRetailValue)}</div>
+        <div class="kpi-subtext"><span>Margen bruto proyectado:</span><strong class="mono">${formatCOP(potentialStockProfit)}</strong></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-header"><span class="kpi-label">Alertas de Reabastecimiento</span><span class="kpi-tag ${lowStockCount + outOfStockCount > 0 ? 'tag-crimson' : 'tag-emerald'}">Stock</span></div>
+        <div class="kpi-value" style="color:${lowStockCount + outOfStockCount > 0 ? 'var(--color-danger)' : 'var(--color-success)'};">${lowStockCount + outOfStockCount} <small style="font-size:0.85rem;">SKUs</small></div>
+        <div class="kpi-subtext"><span>Stock bajo: <strong>${lowStockCount}</strong></span><strong class="mono">Agotados: ${outOfStockCount}</strong></div>
+      </div>
+    `;
+  }
+
+  // Filter products
+  const filtered = appState.products.filter(p => {
+    const matchesSearch =
+      !searchVal ||
+      p.name.toLowerCase().includes(searchVal) ||
+      p.sku.toLowerCase().includes(searchVal) ||
+      (p.category || '').toLowerCase().includes(searchVal) ||
+      (p.supplier || '').toLowerCase().includes(searchVal);
+
+    const matchesCat = catFilter === 'ALL' || p.category === catFilter;
+    const matchesFulfillment = fulfillmentFilter === 'ALL' || (p.fulfillmentType || 'Stock Propio') === fulfillmentFilter;
+
+    const stockNum = Number(p.stock) || 0;
+    const minNum = Number(p.minStock) || 5;
+    let matchesStock = true;
+    if (stockFilter === 'OPTIMAL') matchesStock = stockNum > minNum;
+    else if (stockFilter === 'LOW') matchesStock = stockNum > 0 && stockNum <= minNum;
+    else if (stockFilter === 'OUT') matchesStock = stockNum <= 0;
+
+    return matchesSearch && matchesCat && matchesFulfillment && matchesStock;
+  });
+
+  // Toggle Table vs Cards visibility
+  const tableWrap = document.getElementById('products-table-wrap');
+  const cardsWrap = document.getElementById('products-cards-wrap');
+  if (tableWrap && cardsWrap) {
+    tableWrap.style.display = productViewMode === 'table' ? 'block' : 'none';
+    cardsWrap.style.display = productViewMode === 'cards' ? 'grid' : 'none';
+  }
+
   const tbody = document.getElementById('products-table-tbody');
-  tbody.innerHTML = appState.products.map(p => {
+  if (!tbody) return;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:2rem; color:var(--text-muted);">No se encontraron productos con los filtros aplicados.</td></tr>`;
+    if (cardsWrap) {
+      cardsWrap.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:2rem; color:var(--text-muted);">No se encontraron productos con los filtros aplicados.</div>`;
+    }
+    return;
+  }
+
+  // Render Table Rows
+  tbody.innerHTML = filtered.map(p => {
     const unitMargin = (Number(p.salePrice) || 0) - (Number(p.costPrice) || 0) - (Number(p.avgShippingCost) || 0);
     const marginPct = p.salePrice > 0 ? (unitMargin / p.salePrice) * 100 : 0;
-    const isLow = Number(p.stock) <= Number(p.minStock);
+    const stockNum = Number(p.stock) || 0;
+    const minNum = Number(p.minStock) || 5;
+    const isOut = stockNum <= 0;
+    const isLow = stockNum > 0 && stockNum <= minNum;
+    const stockBadgeClass = isOut ? 'status-devuelto' : isLow ? 'status-novedad' : 'status-entregado';
+    const stockCostTotal = stockNum * (Number(p.costPrice) || 0);
+    const fulfillment = p.fulfillmentType || 'Stock Propio';
+    const supplier = p.supplier || 'Bodega Principal';
+    const comparePrice = Number(p.compareAtPrice) || 0;
 
     const prodOrders = appState.orders.filter(o => o.productId === p.id);
     const deliveredUnits = prodOrders.filter(o => o.shippingStatus === 'Entregado').reduce((s, o) => s + (Number(o.quantity) || 1), 0);
     const returnedUnits = prodOrders.filter(o => o.shippingStatus === 'Devuelto').reduce((s, o) => s + (Number(o.quantity) || 1), 0);
+    const totalClosed = deliveredUnits + returnedUnits;
+    const prodEff = totalClosed > 0 ? Math.round((deliveredUnits / totalClosed) * 100) : 100;
 
     return `
       <tr>
@@ -863,33 +976,130 @@ function renderProductsView() {
           <div class="cell-primary">${p.name}</div>
           <div class="cell-sub mono">${p.sku}</div>
         </td>
-        <td>${p.category}</td>
-        <td class="mono">${formatCOP(p.costPrice)}</td>
-        <td class="mono cell-primary">${formatCOP(p.salePrice)}</td>
-        <td class="mono">${formatCOP(p.avgShippingCost)}</td>
-        <td class="mono" style="color:var(--color-success); font-weight:600;">
-          ${formatCOP(unitMargin)} <small>(${marginPct.toFixed(0)}%)</small>
+        <td>
+          <div class="cell-primary">${p.category}</div>
+          <div class="cell-sub">🏭 ${supplier}</div>
         </td>
         <td>
-          <div style="display:flex; align-items:center; gap:0.45rem;">
-            <button type="button" class="btn-icon" style="padding:0.15rem 0.45rem;" onclick="adjustStock('${p.id}', -1)">−</button>
-            <span class="status-badge ${isLow ? 'status-devuelto' : 'status-entregado'} mono">${p.stock} und.</span>
-            <button type="button" class="btn-icon" style="padding:0.15rem 0.45rem;" onclick="adjustStock('${p.id}', 1)">+</button>
+          <span class="status-badge ${fulfillment.includes('Dropi') ? 'status-transito' : 'status-entregado'}">
+            ${fulfillment}
+          </span>
+        </td>
+        <td class="mono">${formatCOP(p.costPrice)}</td>
+        <td class="mono">
+          <div class="cell-primary">${formatCOP(p.salePrice)}</div>
+          ${comparePrice > p.salePrice ? `<div class="cell-sub" style="text-decoration:line-through;">Antes: ${formatCOP(comparePrice)}</div>` : ''}
+        </td>
+        <td class="mono">${formatCOP(p.avgShippingCost)}</td>
+        <td class="mono" style="color:${unitMargin >= 0 ? 'var(--color-success)' : 'var(--color-danger)'}; font-weight:700;">
+          <div>${formatCOP(unitMargin)}</div>
+          <div class="cell-sub">${marginPct.toFixed(1)}% neto/und</div>
+        </td>
+        <td>
+          <div style="display:flex; align-items:center; gap:0.35rem;">
+            <button type="button" class="btn-icon" style="padding:0.15rem 0.45rem;" onclick="adjustStock('${p.id}', -1)" title="Restar 1 unidad">−</button>
+            <span class="status-badge ${stockBadgeClass} mono">${stockNum} und.</span>
+            <button type="button" class="btn-icon" style="padding:0.15rem 0.45rem;" onclick="adjustStock('${p.id}', 1)" title="Sumar 1 unidad">+</button>
           </div>
+          <div class="cell-sub">Mínimo alerta: ${minNum} und.</div>
         </td>
         <td class="mono">
-          <span style="color:var(--color-success);">${deliveredUnits} ent.</span> /
-          <span style="color:var(--color-danger);">${returnedUnits} dev.</span>
+          <div class="cell-primary">${formatCOP(stockCostTotal)}</div>
+          <div class="cell-sub">PVP: ${formatCOP(stockNum * (Number(p.salePrice) || 0))}</div>
+        </td>
+        <td class="mono">
+          <div><span style="color:var(--color-success); font-weight:600;">${deliveredUnits} ent.</span> / <span style="color:var(--color-danger);">${returnedUnits} dev.</span></div>
+          <div class="cell-sub">${prodEff}% efectividad</div>
         </td>
         <td>
-          <div style="display:flex; gap:0.35rem;">
+          <button type="button" class="status-badge ${p.status === 'Inactivo' ? 'status-pendiente' : 'status-entregado'}" style="border:none; cursor:pointer;" onclick="toggleProductStatus('${p.id}')" title="Clic para cambiar estado Activo/Inactivo">
+            ${p.status || 'Activo'}
+          </button>
+        </td>
+        <td>
+          <div style="display:flex; gap:0.3rem;">
+            <button type="button" class="btn-icon" onclick="openRestockModal('${p.id}')" title="Reabastecer Stock / Entrada a Bodega">📦</button>
             <button type="button" class="btn-icon" onclick="openEditProductModal('${p.id}')" title="Editar producto">✏️</button>
+            <button type="button" class="btn-icon" onclick="duplicateProduct('${p.id}')" title="Duplicar producto">📋</button>
             <button type="button" class="btn-icon" onclick="deleteProduct('${p.id}')" title="Eliminar producto">🗑️</button>
           </div>
         </td>
       </tr>
     `;
   }).join('');
+
+  // Render Cards Grid View
+  if (cardsWrap) {
+    cardsWrap.innerHTML = filtered.map(p => {
+      const unitMargin = (Number(p.salePrice) || 0) - (Number(p.costPrice) || 0) - (Number(p.avgShippingCost) || 0);
+      const marginPct = p.salePrice > 0 ? (unitMargin / p.salePrice) * 100 : 0;
+      const stockNum = Number(p.stock) || 0;
+      const minNum = Number(p.minStock) || 5;
+      const isOut = stockNum <= 0;
+      const isLow = stockNum > 0 && stockNum <= minNum;
+      const stockBadgeClass = isOut ? 'status-devuelto' : isLow ? 'status-novedad' : 'status-entregado';
+      const stockCostTotal = stockNum * (Number(p.costPrice) || 0);
+      const fulfillment = p.fulfillmentType || 'Stock Propio';
+      const supplier = p.supplier || 'Bodega Principal';
+
+      const prodOrders = appState.orders.filter(o => o.productId === p.id);
+      const deliveredUnits = prodOrders.filter(o => o.shippingStatus === 'Entregado').reduce((s, o) => s + (Number(o.quantity) || 1), 0);
+
+      return `
+        <div class="product-manager-card">
+          <div class="pm-card-top">
+            <span class="pm-sku-tag">${p.sku}</span>
+            <div style="display:flex; gap:0.35rem; align-items:center;">
+              <span class="status-badge ${fulfillment.includes('Dropi') ? 'status-transito' : 'status-entregado'}">${fulfillment}</span>
+              <span class="status-badge ${stockBadgeClass} mono">${stockNum} und.</span>
+            </div>
+          </div>
+
+          <div>
+            <div class="pm-title">${p.name}</div>
+            <div class="pm-meta">
+              <span>📂 ${p.category}</span>
+              <span>·</span>
+              <span>🏭 ${supplier}</span>
+            </div>
+          </div>
+
+          <div class="pm-metrics-grid">
+            <div class="pm-metric-item">
+              <div class="pm-metric-label">Precio Shopify</div>
+              <div class="pm-metric-val">${formatCOP(p.salePrice)}</div>
+            </div>
+            <div class="pm-metric-item">
+              <div class="pm-metric-label">Costo + Flete</div>
+              <div class="pm-metric-val">${formatCOP((Number(p.costPrice) || 0) + (Number(p.avgShippingCost) || 0))}</div>
+            </div>
+            <div class="pm-metric-item">
+              <div class="pm-metric-label">Margen Neto / Und</div>
+              <div class="pm-metric-val" style="color:var(--color-success);">${formatCOP(unitMargin)} (${marginPct.toFixed(0)}%)</div>
+            </div>
+            <div class="pm-metric-item">
+              <div class="pm-metric-label">Capital en Bodega</div>
+              <div class="pm-metric-val">${formatCOP(stockCostTotal)}</div>
+            </div>
+          </div>
+
+          <div class="pm-footer">
+            <div style="display:flex; align-items:center; gap:0.35rem;">
+              <button type="button" class="btn-icon" style="padding:0.2rem 0.5rem;" onclick="adjustStock('${p.id}', -1)">−</button>
+              <span class="mono" style="font-size:0.76rem; font-weight:600;">Stock: ${stockNum}</span>
+              <button type="button" class="btn-icon" style="padding:0.2rem 0.5rem;" onclick="adjustStock('${p.id}', 1)">+</button>
+              <span style="font-size:0.72rem; color:var(--text-muted); margin-left:0.25rem;">(${deliveredUnits} vendidos)</span>
+            </div>
+            <div style="display:flex; gap:0.35rem;">
+              <button type="button" class="btn btn-secondary" style="padding:0.3rem 0.55rem; font-size:0.74rem;" onclick="openRestockModal('${p.id}')">📦 +Stock</button>
+              <button type="button" class="btn-icon" onclick="openEditProductModal('${p.id}')" title="Editar">✏️</button>
+              <button type="button" class="btn-icon" onclick="duplicateProduct('${p.id}')" title="Duplicar">📋</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
 }
 
 window.adjustStock = function(productId, delta) {
@@ -900,6 +1110,88 @@ window.adjustStock = function(productId, delta) {
   renderAll();
 };
 
+window.toggleProductStatus = function(productId) {
+  const prod = appState.products.find(p => p.id === productId);
+  if (!prod) return;
+  prod.status = prod.status === 'Inactivo' ? 'Activo' : 'Inactivo';
+  saveAppState(appState);
+  renderAll();
+  showToast(`Estado de "${prod.name}" cambiado a ${prod.status}`);
+};
+
+window.duplicateProduct = function(productId) {
+  const orig = appState.products.find(p => p.id === productId);
+  if (!orig) return;
+  const copy = {
+    ...orig,
+    id: 'PRD-' + Math.floor(100 + Math.random() * 900),
+    sku: `${orig.sku}-COPIA`,
+    name: `${orig.name} (Variante)`
+  };
+  appState.products.unshift(copy);
+  saveAppState(appState);
+  renderAll();
+  showToast(`Producto duplicado como "${copy.sku}"`);
+};
+
+function updateProductModalMarginPreview() {
+  const cost = Number(document.getElementById('product-cost')?.value) || 0;
+  const price = Number(document.getElementById('product-price')?.value) || 0;
+  const shipping = Number(document.getElementById('product-shipping')?.value) || 0;
+  const margin = price - cost - shipping;
+  const pct = price > 0 ? (margin / price) * 100 : 0;
+
+  const valEl = document.getElementById('modal-prod-margin-val');
+  const pctEl = document.getElementById('modal-prod-margin-pct');
+  if (valEl) {
+    valEl.textContent = formatCOP(margin);
+    valEl.style.color = margin >= 0 ? 'var(--color-success)' : 'var(--color-danger)';
+  }
+  if (pctEl) {
+    pctEl.textContent = `Margen operativo antes de pauta: ${pct.toFixed(1)}% sobre precio de venta`;
+  }
+}
+
+function openNewProductModal() {
+  document.getElementById('form-product')?.reset();
+  document.getElementById('product-id-input').value = '';
+  document.getElementById('modal-product-title').textContent = 'Crear Nuevo Producto en Catálogo Shopify';
+  const nextSkuNum = 10 + appState.products.length;
+  document.getElementById('product-sku').value = `SHP-PROD-${nextSkuNum}`;
+  document.getElementById('product-status').value = 'Activo';
+  document.getElementById('product-fulfillment').value = 'Stock Propio';
+  document.getElementById('product-supplier').value = 'Importadora Mayorista';
+  document.getElementById('product-shipping').value = 15500;
+  document.getElementById('product-stock').value = 25;
+  document.getElementById('product-min-stock').value = 8;
+  updateProductModalMarginPreview();
+  openModal('modal-product');
+}
+
+window.openRestockModal = function(preselectedProductId) {
+  populateProductSelects();
+  const select = document.getElementById('restock-product-select');
+  if (select && preselectedProductId) {
+    select.value = preselectedProductId;
+  }
+  const prod = appState.products.find(p => p.id === (select?.value || preselectedProductId)) || appState.products[0];
+  if (prod) {
+    document.getElementById('restock-unit-cost').value = prod.costPrice;
+  }
+  document.getElementById('restock-quantity').value = 20;
+  updateRestockTotalPreview();
+  openModal('modal-restock');
+};
+
+function updateRestockTotalPreview() {
+  const qty = Number(document.getElementById('restock-quantity')?.value) || 0;
+  const cost = Number(document.getElementById('restock-unit-cost')?.value) || 0;
+  const preview = document.getElementById('restock-total-preview');
+  if (preview) {
+    preview.textContent = `Total inversión lote (${qty} unidades): ${formatCOP(qty * cost)}`;
+  }
+}
+
 function runSimulator() {
   const salePrice = Number(document.getElementById('sim-sale-price')?.value) || 0;
   const costPrice = Number(document.getElementById('sim-cost-price')?.value) || 0;
@@ -908,7 +1200,6 @@ function runSimulator() {
   const rtsRatePct = Math.min(90, Math.max(0, Number(document.getElementById('sim-rts-rate')?.value) || 0));
 
   const deliveryRate = (100 - rtsRatePct) / 100;
-  const returnRate = rtsRatePct / 100;
 
   // Profit if delivered = Sale - Cost - Shipping - CPA
   const profitIfDelivered = salePrice - costPrice - shippingCost - cpaAds;
@@ -942,23 +1233,32 @@ function populateProductSelects() {
   const orderProdSelect = document.getElementById('order-product-select');
   const simProdSelect = document.getElementById('sim-product-select');
   const returnOrderSelect = document.getElementById('return-order-select');
+  const restockProdSelect = document.getElementById('restock-product-select');
 
   const prodOptions = appState.products.map(p =>
-    `<option value="${p.id}">${p.name} (${formatCOP(p.salePrice)})</option>`
+    `<option value="${p.id}">${p.name} (${formatCOP(p.salePrice)} · Stock: ${p.stock})</option>`
   ).join('');
 
-  if (orderProdSelect && !orderProdSelect.dataset.initialized) {
-    orderProdSelect.innerHTML = prodOptions;
-    orderProdSelect.dataset.initialized = 'true';
-  } else if (orderProdSelect) {
+  if (orderProdSelect) {
     const currentVal = orderProdSelect.value;
     orderProdSelect.innerHTML = prodOptions;
-    if (currentVal) orderProdSelect.value = currentVal;
+    if (currentVal && appState.products.some(p => p.id === currentVal)) {
+      orderProdSelect.value = currentVal;
+    }
   }
 
-  if (simProdSelect && !simProdSelect.dataset.initialized) {
+  if (simProdSelect) {
+    const currentSim = simProdSelect.value;
     simProdSelect.innerHTML = `<option value="CUSTOM">-- Personalizado --</option>` + prodOptions;
-    simProdSelect.dataset.initialized = 'true';
+    if (currentSim) simProdSelect.value = currentSim;
+  }
+
+  if (restockProdSelect) {
+    const currentRestock = restockProdSelect.value;
+    restockProdSelect.innerHTML = prodOptions;
+    if (currentRestock && appState.products.some(p => p.id === currentRestock)) {
+      restockProdSelect.value = currentRestock;
+    }
   }
 
   if (returnOrderSelect) {
@@ -1071,12 +1371,17 @@ window.openEditProductModal = function(productId) {
   document.getElementById('product-id-input').value = p.id;
   document.getElementById('product-sku').value = p.sku;
   document.getElementById('product-category').value = p.category;
+  document.getElementById('product-status').value = p.status || 'Activo';
   document.getElementById('product-name').value = p.name;
+  document.getElementById('product-fulfillment').value = p.fulfillmentType || 'Stock Propio';
+  document.getElementById('product-supplier').value = p.supplier || 'Proveedor General';
   document.getElementById('product-cost').value = p.costPrice;
   document.getElementById('product-price').value = p.salePrice;
   document.getElementById('product-shipping').value = p.avgShippingCost;
+  document.getElementById('product-compare-price').value = p.compareAtPrice || Math.round(p.salePrice * 1.25);
   document.getElementById('product-stock').value = p.stock;
   document.getElementById('product-min-stock').value = p.minStock;
+  updateProductModalMarginPreview();
   openModal('modal-product');
 };
 
@@ -1169,6 +1474,21 @@ function exportExpensesToCSV() {
   ]);
   downloadCSVFile(`Sebas_Gastos_Shopify_${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
   showToast('Archivo CSV de gastos descargado');
+}
+
+function exportProductsToCSV() {
+  const header = [
+    'ID', 'SKU', 'Producto', 'Categoria', 'Modalidad_Logistica', 'Proveedor',
+    'Costo_Proveedor_COP', 'Precio_Venta_Shopify_COP', 'Flete_Promedio_COP',
+    'Stock_Actual', 'Stock_Minimo_Alerta', 'Valor_Stock_Costo_COP', 'Estado'
+  ];
+  const rows = appState.products.map(p => [
+    p.id, p.sku, p.name, p.category, p.fulfillmentType || 'Stock Propio', p.supplier || 'Proveedor General',
+    p.costPrice, p.salePrice, p.avgShippingCost, p.stock, p.minStock,
+    (Number(p.stock) || 0) * (Number(p.costPrice) || 0), p.status || 'Activo'
+  ]);
+  downloadCSVFile(`Sebas_Catalogo_Productos_${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
+  showToast('Catálogo de productos exportado a CSV');
 }
 
 function downloadTemplateCSV() {
@@ -1354,11 +1674,40 @@ document.addEventListener('DOMContentLoaded', () => {
     openModal('modal-return');
   });
 
-  document.getElementById('btn-open-product-modal')?.addEventListener('click', () => {
-    document.getElementById('form-product').reset();
-    document.getElementById('product-id-input').value = '';
-    document.getElementById('modal-product-title').textContent = 'Nuevo Producto de Shopify';
-    openModal('modal-product');
+  document.getElementById('btn-open-product-modal')?.addEventListener('click', openNewProductModal);
+  document.getElementById('btn-quick-product')?.addEventListener('click', openNewProductModal);
+  document.getElementById('btn-open-restock-modal')?.addEventListener('click', () => openRestockModal());
+
+  // Product View Mode Toggle (Table vs Cards)
+  document.getElementById('btn-prod-view-table')?.addEventListener('click', () => {
+    productViewMode = 'table';
+    document.getElementById('btn-prod-view-table')?.classList.add('active');
+    document.getElementById('btn-prod-view-cards')?.classList.remove('active');
+    renderProductsView();
+  });
+
+  document.getElementById('btn-prod-view-cards')?.addEventListener('click', () => {
+    productViewMode = 'cards';
+    document.getElementById('btn-prod-view-cards')?.classList.add('active');
+    document.getElementById('btn-prod-view-table')?.classList.remove('active');
+    renderProductsView();
+  });
+
+  // Live Margin Preview in Product Modal
+  ['product-cost', 'product-price', 'product-shipping'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', updateProductModalMarginPreview);
+  });
+
+  // Live Restock Preview in Restock Modal
+  document.getElementById('restock-product-select')?.addEventListener('change', e => {
+    const prod = appState.products.find(p => p.id === e.target.value);
+    if (prod) {
+      document.getElementById('restock-unit-cost').value = prod.costPrice;
+      updateRestockTotalPreview();
+    }
+  });
+  ['restock-quantity', 'restock-unit-cost'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', updateRestockTotalPreview);
   });
 
   document.getElementById('btn-open-csv-modal')?.addEventListener('click', () => openModal('modal-csv'));
@@ -1487,32 +1836,67 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('form-product')?.addEventListener('submit', e => {
     e.preventDefault();
     const editId = document.getElementById('product-id-input').value;
+    const salePriceVal = Number(document.getElementById('product-price').value) || 0;
     const payload = {
-      id: editId || 'PRD-' + Math.floor(10 + Math.random() * 90),
+      id: editId || 'PRD-' + Math.floor(100 + Math.random() * 900),
       sku: document.getElementById('product-sku').value,
       category: document.getElementById('product-category').value,
+      status: document.getElementById('product-status').value || 'Activo',
       name: document.getElementById('product-name').value,
+      fulfillmentType: document.getElementById('product-fulfillment').value || 'Stock Propio',
+      supplier: document.getElementById('product-supplier').value || 'Proveedor General',
       costPrice: Number(document.getElementById('product-cost').value) || 0,
-      salePrice: Number(document.getElementById('product-price').value) || 0,
+      salePrice: salePriceVal,
+      compareAtPrice: Number(document.getElementById('product-compare-price').value) || Math.round(salePriceVal * 1.25),
       avgShippingCost: Number(document.getElementById('product-shipping').value) || 15000,
       stock: Number(document.getElementById('product-stock').value) || 0,
-      minStock: Number(document.getElementById('product-min-stock').value) || 5,
-      status: 'Activo'
+      minStock: Number(document.getElementById('product-min-stock').value) || 5
     };
 
     if (editId) {
       const idx = appState.products.findIndex(p => p.id === editId);
       if (idx !== -1) appState.products[idx] = payload;
     } else {
-      appState.products.push(payload);
+      appState.products.unshift(payload);
     }
 
-    document.getElementById('order-product-select').dataset.initialized = '';
-    document.getElementById('sim-product-select').dataset.initialized = '';
     saveAppState(appState);
     closeModal('modal-product');
     renderAll();
-    showToast(`Producto "${payload.name}" guardado`);
+    showToast(`Producto "${payload.name}" guardado en el catálogo`);
+  });
+
+  // Submit Restock Form
+  document.getElementById('form-restock')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const prodId = document.getElementById('restock-product-select').value;
+    const qty = Number(document.getElementById('restock-quantity').value) || 0;
+    const unitCost = Number(document.getElementById('restock-unit-cost').value) || 0;
+    const logExpense = document.getElementById('restock-log-expense')?.checked;
+
+    const prod = appState.products.find(p => p.id === prodId);
+    if (!prod || qty <= 0) return;
+
+    prod.stock = (Number(prod.stock) || 0) + qty;
+    if (unitCost > 0) prod.costPrice = unitCost;
+
+    if (logExpense && qty * unitCost > 0) {
+      appState.expenses.unshift({
+        id: 'EXP-' + Math.floor(100 + Math.random() * 900),
+        date: new Date().toISOString().slice(0, 10),
+        category: 'Inventario / Proveedores',
+        concept: `Compra de inventario (${qty} und.) — ${prod.name}`,
+        amount: qty * unitCost,
+        paymentMethod: 'Transferencia Proveedor',
+        status: 'Pagado',
+        reference: prod.sku
+      });
+    }
+
+    saveAppState(appState);
+    closeModal('modal-restock');
+    renderAll();
+    showToast(`+${qty} unidades agregadas a "${prod.name}"`);
   });
 
   // Table Filters
@@ -1524,6 +1908,11 @@ document.addEventListener('DOMContentLoaded', () => {
   ['expenses-search-input', 'expenses-category-filter'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', renderExpensesView);
     document.getElementById(id)?.addEventListener('change', renderExpensesView);
+  });
+
+  ['products-search-input', 'products-category-filter', 'products-fulfillment-filter', 'products-stock-filter'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', renderProductsView);
+    document.getElementById(id)?.addEventListener('change', renderProductsView);
   });
 
   // Simulator Inputs
@@ -1544,6 +1933,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // CSV & Backup Actions
   document.getElementById('btn-export-orders-csv')?.addEventListener('click', exportOrdersToCSV);
   document.getElementById('btn-export-expenses-csv')?.addEventListener('click', exportExpensesToCSV);
+  document.getElementById('btn-export-products-csv')?.addEventListener('click', exportProductsToCSV);
   document.getElementById('btn-download-template-csv')?.addEventListener('click', downloadTemplateCSV);
   document.getElementById('btn-process-csv')?.addEventListener('click', handleCSVUpload);
 
