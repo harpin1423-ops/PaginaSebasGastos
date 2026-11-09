@@ -1354,6 +1354,44 @@ a {
   flex-shrink: 0;
 }
 
+.currency-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.currency-prefix {
+  position: absolute;
+  left: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--brand-primary);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.currency-input-wrap .input-control {
+  padding-left: 1.75rem;
+  padding-right: 6.8rem;
+}
+
+.currency-live-pill {
+  position: absolute;
+  right: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  padding: 0.12rem 0.42rem;
+  border-radius: 5px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 /* ==========================================================================
    RESPONSIVE BREAKPOINTS
    ========================================================================== */

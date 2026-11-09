@@ -477,18 +477,16 @@ const INITIAL_DATA = {
 };
 
 /**
- * Format number as Colombian Pesos (COP)
+ * Format number as Colombian Pesos (COP) with $ symbol and 2 decimal places
  */
 function formatCOP(value) {
   const num = Number(value) || 0;
   const isNegative = num < 0;
-  const absFormatted = new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    maximumFractionDigits: 0,
-    minimumFractionDigits: 0
+  const formattedNumber = new Intl.NumberFormat('es-CO', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
   }).format(Math.abs(num));
-  return isNegative ? `- ${absFormatted}` : absFormatted;
+  return isNegative ? `- $ ${formattedNumber}` : `$ ${formattedNumber}`;
 }
 
 /**
@@ -512,6 +510,7 @@ function loadAppState() {
       supplier: p.supplier || 'Proveedor Principal',
       compareAtPrice: p.compareAtPrice || Math.round((Number(p.salePrice) || 0) * 1.25),
       status: p.status === 'Inactivo' ? 'Inactivo' : 'Activo',
+      imageUrl: p.imageUrl || PRODUCT_DEFAULT_IMAGES[p.id] || PRODUCT_DEFAULT_IMAGES['PRD-01'],
       ...p
     }));
     return parsed;

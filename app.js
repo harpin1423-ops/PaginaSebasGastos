@@ -447,7 +447,7 @@ function drawFinanceChart() {
   const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.07)';
   const textColor = isDark ? '#94a3b8' : '#64748b';
 
-  const padLeft = 68;
+  const padLeft = 108;
   const padRight = 20;
   const padTop = 28;
   const padBottom = 34;
@@ -461,7 +461,7 @@ function drawFinanceChart() {
   maxVal = Math.ceil(maxVal / 100000) * 100000;
 
   // Horizontal grid lines
-  ctx.font = '500 11px "JetBrains Mono", monospace';
+  ctx.font = '500 10.5px "JetBrains Mono", monospace';
   ctx.fillStyle = textColor;
   const steps = 4;
   for (let i = 0; i <= steps; i++) {
@@ -474,7 +474,7 @@ function drawFinanceChart() {
     ctx.lineTo(width - padRight, y);
     ctx.stroke();
 
-    const label = val >= 1000 ? `$${Math.round(val / 1000)}k` : '$0';
+    const label = formatCOP(val);
     ctx.textAlign = 'right';
     ctx.fillText(label, padLeft - 8, y + 4);
   }
@@ -1304,7 +1304,71 @@ function populateProductSelects() {
   }
 }
 
+const MONEY_INPUT_IDS = [
+  'sim-sale-price', 'sim-cost-price', 'sim-shipping-cost', 'sim-cpa-ads',
+  'order-sale-total', 'order-cost-total', 'order-shipping-cost', 'order-gateway-fee',
+  'expense-amount',
+  'return-lost-shipping', 'return-refund-amount',
+  'product-cost', 'product-price', 'product-shipping', 'product-compare-price',
+  'restock-unit-cost'
+];
+
+function enhanceMoneyInputs() {
+  MONEY_INPUT_IDS.forEach(id => {
+    const input = document.getElementById(id);
+    if (!input || input.dataset.moneyEnhanced) return;
+    input.dataset.moneyEnhanced = 'true';
+    input.step = '0.01';
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'currency-input-wrap';
+    input.parentNode.insertBefore(wrapper, input);
+
+    const prefix = document.createElement('span');
+    prefix.className = 'currency-prefix';
+    prefix.textContent = '$';
+    wrapper.appendChild(prefix);
+
+    wrapper.appendChild(input);
+
+    const pill = document.createElement('span');
+    pill.className = 'currency-live-pill';
+    pill.id = `${id}-live-pill`;
+    wrapper.appendChild(pill);
+
+    const updatePill = (formatFixed) => {
+      const num = Number(input.value) || 0;
+      if (formatFixed && input.value !== '') {
+        input.value = num.toFixed(2);
+      }
+      pill.textContent = formatCOP(num);
+    };
+
+    input.addEventListener('input', () => updatePill(false));
+    input.addEventListener('change', () => updatePill(true));
+    input.addEventListener('blur', () => updatePill(true));
+
+    updatePill(true);
+  });
+}
+
+function refreshMoneyInputDisplays(formatFixed = true) {
+  MONEY_INPUT_IDS.forEach(id => {
+    const input = document.getElementById(id);
+    const pill = document.getElementById(`${id}-live-pill`);
+    if (!input) return;
+    const num = Number(input.value) || 0;
+    if (formatFixed && input.value !== '') {
+      input.value = num.toFixed(2);
+    }
+    if (pill) {
+      pill.textContent = formatCOP(num);
+    }
+  });
+}
+
 function openModal(modalId) {
+  refreshMoneyInputDisplays(true);
   document.getElementById(modalId)?.classList.add('open');
 }
 
@@ -1346,11 +1410,11 @@ window.openEditOrderModal = function(orderId) {
   document.getElementById('order-carrier').value = o.carrier;
   document.getElementById('order-tracking').value = o.trackingNumber;
   document.getElementById('order-shipping-status').value = o.shippingStatus;
-  document.getElementById('order-sale-total').value = o.saleTotal;
-  document.getElementById('order-cost-total').value = o.productCostTotal;
-  document.getElementById('order-shipping-cost').value = o.shippingCost;
+  document.getElementById('order-sale-total').value = Number(o.saleTotal || 0).toFixed(2);
+  document.getElementById('order-cost-total').value = Number(o.productCostTotal || 0).toFixed(2);
+  document.getElementById('order-shipping-cost').value = Number(o.shippingCost || 0).toFixed(2);
   document.getElementById('order-payment-detail').value = o.paymentMethodDetail;
-  document.getElementById('order-gateway-fee').value = o.gatewayFee;
+  document.getElementById('order-gateway-fee').value = Number(o.gatewayFee || 0).toFixed(2);
   document.getElementById('order-notes').value = o.notes || '';
   openModal('modal-order');
 };
@@ -1366,17 +1430,18 @@ function syncOrderFormWithProduct() {
   const costTotal = prod.costPrice * qty;
   const shippingCost = prod.avgShippingCost;
 
-  document.getElementById('order-sale-total').value = saleTotal;
-  document.getElementById('order-cost-total').value = costTotal;
-  document.getElementById('order-shipping-cost').value = shippingCost;
+  document.getElementById('order-sale-total').value = saleTotal.toFixed(2);
+  document.getElementById('order-cost-total').value = costTotal.toFixed(2);
+  document.getElementById('order-shipping-cost').value = shippingCost.toFixed(2);
 
   if (payModel === 'Contraentrega (COD)') {
     document.getElementById('order-payment-detail').value = 'Efectivo al recibir';
-    document.getElementById('order-gateway-fee').value = 0;
+    document.getElementById('order-gateway-fee').value = (0).toFixed(2);
   } else {
     document.getElementById('order-payment-detail').value = 'Wompi (PSE / Tarjeta)';
-    document.getElementById('order-gateway-fee').value = Math.round(saleTotal * 0.032);
+    document.getElementById('order-gateway-fee').value = (saleTotal * 0.032).toFixed(2);
   }
+  refreshMoneyInputDisplays(true);
 }
 
 window.deleteOrder = function(orderId) {
@@ -1411,10 +1476,10 @@ window.openEditProductModal = function(productId) {
   document.getElementById('product-name').value = p.name;
   document.getElementById('product-fulfillment').value = p.fulfillmentType || 'Stock Propio';
   document.getElementById('product-supplier').value = p.supplier || 'Proveedor General';
-  document.getElementById('product-cost').value = p.costPrice;
-  document.getElementById('product-price').value = p.salePrice;
-  document.getElementById('product-shipping').value = p.avgShippingCost;
-  document.getElementById('product-compare-price').value = p.compareAtPrice || Math.round(p.salePrice * 1.25);
+  document.getElementById('product-cost').value = Number(p.costPrice || 0).toFixed(2);
+  document.getElementById('product-price').value = Number(p.salePrice || 0).toFixed(2);
+  document.getElementById('product-shipping').value = Number(p.avgShippingCost || 0).toFixed(2);
+  document.getElementById('product-compare-price').value = Number(p.compareAtPrice || Math.round(p.salePrice * 1.25)).toFixed(2);
   document.getElementById('product-stock').value = p.stock;
   document.getElementById('product-min-stock').value = p.minStock;
   const imgSrc = getProductImage(p);
@@ -1504,7 +1569,7 @@ function exportOrdersToCSV() {
   const rows = appState.orders.map(o => [
     o.shopifyOrderNumber, o.date, o.customerName, o.customerPhone, o.city, o.productName,
     o.quantity, o.paymentModel, o.paymentStatus, o.carrier, o.trackingNumber,
-    o.shippingStatus, o.saleTotal, o.productCostTotal, o.shippingCost, o.gatewayFee
+    o.shippingStatus, formatCOP(o.saleTotal), formatCOP(o.productCostTotal), formatCOP(o.shippingCost), formatCOP(o.gatewayFee)
   ]);
   downloadCSVFile(`Sebas_Pedidos_Shopify_${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
   showToast('Archivo CSV de pedidos descargado');
@@ -1513,7 +1578,7 @@ function exportOrdersToCSV() {
 function exportExpensesToCSV() {
   const header = ['ID', 'Fecha', 'Concepto', 'Categoria', 'Metodo_Pago', 'Referencia', 'Estado', 'Monto_COP'];
   const rows = appState.expenses.map(e => [
-    e.id, e.date, e.concept, e.category, e.paymentMethod, e.reference, e.status, e.amount
+    e.id, e.date, e.concept, e.category, e.paymentMethod, e.reference, e.status, formatCOP(e.amount)
   ]);
   downloadCSVFile(`Sebas_Gastos_Shopify_${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
   showToast('Archivo CSV de gastos descargado');
@@ -1527,8 +1592,8 @@ function exportProductsToCSV() {
   ];
   const rows = appState.products.map(p => [
     p.id, p.sku, p.name, p.category, p.fulfillmentType || 'Stock Propio', p.supplier || 'Proveedor General',
-    p.costPrice, p.salePrice, p.avgShippingCost, p.stock, p.minStock,
-    (Number(p.stock) || 0) * (Number(p.costPrice) || 0), p.status || 'Activo'
+    formatCOP(p.costPrice), formatCOP(p.salePrice), formatCOP(p.avgShippingCost), p.stock, p.minStock,
+    formatCOP((Number(p.stock) || 0) * (Number(p.costPrice) || 0)), p.status || 'Activo'
   ]);
   downloadCSVFile(`Sebas_Catalogo_Productos_${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
   showToast('Catálogo de productos exportado a CSV');
@@ -1543,12 +1608,12 @@ function downloadTemplateCSV() {
   const sample1 = [
     '#SH-1060', '2026-11-08', 'Carolina Mejía', '573109988776', 'Medellín, ANT',
     'Mini Proyector Smart HY300 Full HD WiFi', '1', 'Contraentrega (COD)', 'Coordinadora', 'CRD-9910293',
-    'En Tránsito', '249900', '112000', '16500'
+    'En Tránsito', '249900.00', '112000.00', '16500.00'
   ];
   const sample2 = [
     '#SH-1061', '2026-11-08', 'David Ospina', '573154433221', 'Bogotá D.C.',
     'Depiladora Láser IPL Zafiro Indolora', '1', 'Pago Anticipado', 'Interrapidísimo', '24001959991',
-    'Entregado', '199900', '78000', '15000'
+    'Entregado', '199900.00', '78000.00', '15000.00'
   ];
   downloadCSVFile('Plantilla_Importacion_Shopify_Sebas.csv', [header, sample1, sample2]);
   showToast('Plantilla CSV descargada');
@@ -2007,9 +2072,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('sim-product-select')?.addEventListener('change', e => {
     const prod = appState.products.find(p => p.id === e.target.value);
     if (prod) {
-      document.getElementById('sim-sale-price').value = prod.salePrice;
-      document.getElementById('sim-cost-price').value = prod.costPrice;
-      document.getElementById('sim-shipping-cost').value = prod.avgShippingCost;
+      document.getElementById('sim-sale-price').value = Number(prod.salePrice || 0).toFixed(2);
+      document.getElementById('sim-cost-price').value = Number(prod.costPrice || 0).toFixed(2);
+      document.getElementById('sim-shipping-cost').value = Number(prod.avgShippingCost || 0).toFixed(2);
+      refreshMoneyInputDisplays(true);
       runSimulator();
     }
   });
@@ -2043,5 +2109,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentView === 'dashboard') drawFinanceChart();
   });
 
+  enhanceMoneyInputs();
   renderAll();
 });
