@@ -938,6 +938,18 @@
             </div>
           </div>
 
+          <!-- Foto Representativa del Producto -->
+          <div class="image-upload-box">
+            <img id="product-image-preview" class="image-upload-preview" src="" alt="Vista previa del producto" />
+            <div style="flex:1; display:flex; flex-direction:column; gap:0.4rem;">
+              <label for="product-image-url" style="font-size:0.76rem; font-weight:700; color:var(--text-primary);">📷 Foto Representativa del Producto (Subir archivo o pegar URL)</label>
+              <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <input type="file" id="product-image-file" accept="image/*" class="input-control" style="flex:1; min-width:180px; padding:0.35rem 0.5rem; font-size:0.75rem;" />
+                <input type="url" id="product-image-url" class="input-control" placeholder="O pega enlace https://... de Shopify" style="flex:1; min-width:180px; font-size:0.76rem;" />
+              </div>
+            </div>
+          </div>
+
           <div class="form-group">
             <label for="product-name">Nombre Comercial del Producto en Shopify</label>
             <input type="text" class="input-control" id="product-name" placeholder="Ej. Mini Proyector Smart HY300 Full HD WiFi" required />

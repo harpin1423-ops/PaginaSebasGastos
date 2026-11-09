@@ -348,6 +348,18 @@ function renderDashboard(m) {
   }).join('');
   document.getElementById('carrier-summary-tbody').innerHTML = carrierRows;
 
+function getProductImage(product) {
+  if (!product) {
+    return (typeof PRODUCT_DEFAULT_IMAGES !== 'undefined' && PRODUCT_DEFAULT_IMAGES['PRD-01']) || '';
+  }
+  return (
+    product.imageUrl ||
+    (typeof PRODUCT_DEFAULT_IMAGES !== 'undefined' && PRODUCT_DEFAULT_IMAGES[product.id]) ||
+    (typeof PRODUCT_DEFAULT_IMAGES !== 'undefined' && PRODUCT_DEFAULT_IMAGES['PRD-01']) ||
+    ''
+  );
+}
+
   // 5. Top Products Table
   const prodStats = appState.products.map(p => {
     const prodOrders = appState.orders.filter(o => o.productId === p.id);
@@ -370,8 +382,13 @@ function renderDashboard(m) {
     return `
       <tr>
         <td>
-          <div class="cell-primary">${p.name}</div>
-          <div class="cell-sub mono">${p.sku}</div>
+          <div class="prod-thumb-row">
+            <img class="prod-thumb-sm" src="${getProductImage(p)}" alt="${p.name}" loading="lazy" />
+            <div>
+              <div class="cell-primary">${p.name}</div>
+              <div class="cell-sub mono">${p.sku}</div>
+            </div>
+          </div>
         </td>
         <td class="mono">${p.unitsSold} und.</td>
         <td>
@@ -594,6 +611,7 @@ function renderOrdersView() {
       `Hola ${o.customerName}, te escribimos de Sebas Store sobre tu pedido ${o.shopifyOrderNumber} (${o.productName}) enviado por ${o.carrier} con guía ${o.trackingNumber || 'asignada'}.`
     );
     const cleanPhone = (o.customerPhone || '').replace(/\D/g, '');
+    const prodObj = appState.products.find(p => p.id === o.productId);
 
     return `
       <tr>
@@ -607,8 +625,13 @@ function renderOrdersView() {
           ${cleanPhone ? `<a href="https://wa.me/${cleanPhone}?text=${waMsg}" target="_blank" rel="noopener" class="whatsapp-link">💬 WhatsApp Cliente</a>` : ''}
         </td>
         <td>
-          <div class="cell-primary">${o.productName}</div>
-          <div class="cell-sub mono">Cant: ${o.quantity} und. ${o.notes ? `· ${o.notes}` : ''}</div>
+          <div class="prod-thumb-row">
+            <img class="prod-thumb-sm" src="${getProductImage(prodObj)}" alt="${o.productName}" loading="lazy" />
+            <div>
+              <div class="cell-primary">${o.productName}</div>
+              <div class="cell-sub mono">Cant: ${o.quantity} und. ${o.notes ? `· ${o.notes}` : ''}</div>
+            </div>
+          </div>
         </td>
         <td>
           <span class="status-badge ${o.paymentModel.includes('COD') ? 'status-novedad' : 'status-transito'}">${o.paymentModel}</span>
@@ -973,8 +996,13 @@ function renderProductsView() {
     return `
       <tr>
         <td>
-          <div class="cell-primary">${p.name}</div>
-          <div class="cell-sub mono">${p.sku}</div>
+          <div class="prod-thumb-row">
+            <img class="prod-thumb-img" src="${getProductImage(p)}" alt="${p.name}" loading="lazy" />
+            <div>
+              <div class="cell-primary">${p.name}</div>
+              <div class="cell-sub mono">${p.sku}</div>
+            </div>
+          </div>
         </td>
         <td>
           <div class="cell-primary">${p.category}</div>
@@ -1047,11 +1075,14 @@ function renderProductsView() {
 
       return `
         <div class="product-manager-card">
-          <div class="pm-card-top">
-            <span class="pm-sku-tag">${p.sku}</span>
-            <div style="display:flex; gap:0.35rem; align-items:center;">
-              <span class="status-badge ${fulfillment.includes('Dropi') ? 'status-transito' : 'status-entregado'}">${fulfillment}</span>
-              <span class="status-badge ${stockBadgeClass} mono">${stockNum} und.</span>
+          <div class="pm-card-media">
+            <img src="${getProductImage(p)}" alt="${p.name}" loading="lazy" />
+            <div class="pm-card-badges-overlay">
+              <span class="pm-sku-tag">${p.sku}</span>
+              <div style="display:flex; gap:0.35rem; align-items:center;">
+                <span class="status-badge ${fulfillment.includes('Dropi') ? 'status-transito' : 'status-entregado'}">${fulfillment}</span>
+                <span class="status-badge ${stockBadgeClass} mono">${stockNum} und.</span>
+              </div>
             </div>
           </div>
 
@@ -1164,6 +1195,11 @@ function openNewProductModal() {
   document.getElementById('product-shipping').value = 15500;
   document.getElementById('product-stock').value = 25;
   document.getElementById('product-min-stock').value = 8;
+  const defaultImg = getProductImage(null);
+  const previewEl = document.getElementById('product-image-preview');
+  if (previewEl) previewEl.src = defaultImg;
+  const urlEl = document.getElementById('product-image-url');
+  if (urlEl) urlEl.value = '';
   updateProductModalMarginPreview();
   openModal('modal-product');
 }
@@ -1381,6 +1417,13 @@ window.openEditProductModal = function(productId) {
   document.getElementById('product-compare-price').value = p.compareAtPrice || Math.round(p.salePrice * 1.25);
   document.getElementById('product-stock').value = p.stock;
   document.getElementById('product-min-stock').value = p.minStock;
+  const imgSrc = getProductImage(p);
+  const previewEl = document.getElementById('product-image-preview');
+  if (previewEl) previewEl.src = imgSrc;
+  const urlEl = document.getElementById('product-image-url');
+  if (urlEl) urlEl.value = imgSrc.startsWith('data:') ? '' : imgSrc;
+  const fileEl = document.getElementById('product-image-file');
+  if (fileEl) fileEl.value = '';
   updateProductModalMarginPreview();
   openModal('modal-product');
 };
@@ -1698,6 +1741,42 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById(id)?.addEventListener('input', updateProductModalMarginPreview);
   });
 
+  // Product Image File Upload & URL Preview
+  document.getElementById('product-image-url')?.addEventListener('input', e => {
+    const val = e.target.value.trim();
+    const preview = document.getElementById('product-image-preview');
+    if (val && preview) {
+      preview.src = val;
+    }
+  });
+
+  document.getElementById('product-image-file')?.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = evt => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const size = 320;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#f1f5f9';
+        ctx.fillRect(0, 0, size, size);
+        const scale = Math.max(size / img.width, size / img.height);
+        const w = img.width * scale;
+        const h = img.height * scale;
+        ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.84);
+        const preview = document.getElementById('product-image-preview');
+        if (preview) preview.src = dataUrl;
+      };
+      img.src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
   // Live Restock Preview in Restock Modal
   document.getElementById('restock-product-select')?.addEventListener('change', e => {
     const prod = appState.products.find(p => p.id === e.target.value);
@@ -1837,12 +1916,17 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     const editId = document.getElementById('product-id-input').value;
     const salePriceVal = Number(document.getElementById('product-price').value) || 0;
+    const urlInputVal = (document.getElementById('product-image-url')?.value || '').trim();
+    const previewSrc = document.getElementById('product-image-preview')?.getAttribute('src') || '';
+    const finalImageUrl = urlInputVal || previewSrc || getProductImage(null);
+
     const payload = {
       id: editId || 'PRD-' + Math.floor(100 + Math.random() * 900),
       sku: document.getElementById('product-sku').value,
       category: document.getElementById('product-category').value,
       status: document.getElementById('product-status').value || 'Activo',
       name: document.getElementById('product-name').value,
+      imageUrl: finalImageUrl,
       fulfillmentType: document.getElementById('product-fulfillment').value || 'Stock Propio',
       supplier: document.getElementById('product-supplier').value || 'Proveedor General',
       costPrice: Number(document.getElementById('product-cost').value) || 0,
